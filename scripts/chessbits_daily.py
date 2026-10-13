@@ -827,8 +827,14 @@ def main() -> int:
             f"A tactical chess puzzle rated {puzzle_meta['rating']}. Pause before the solution reveal and calculate every reply.\n\n"
             + "Themes: " + ", ".join(puzzle_meta["themes"]) + "\n\n"
         )
-        music_path, music_meta = download_short_music(target, OUT_DIR / "short_music.mp3")
-        description += music_meta["credit"] + "\n\n#chess #puzzle #chesstactics"
+        try:
+            music_path, music_meta = download_short_music(target, OUT_DIR / "short_music.mp3")
+            description += music_meta["credit"] + "\n\n#chess #puzzle #chesstactics"
+        except Exception as music_exc:
+            # Music is a Shorts-only enhancement, never a reason to miss the daily upload.
+            music_path, music_meta = None, None
+            description += "#chess #puzzle #chesstactics"
+            print(f"SHORT_MUSIC_UNAVAILABLE publishing_without_music type={type(music_exc).__name__}", flush=True)
         tags = ["chess", "chess puzzle", "chess tactics", "mate in 2", "chess shorts", "Chess Bits"]
 
     voice_path = OUT_DIR / "voiceover.mp3"
