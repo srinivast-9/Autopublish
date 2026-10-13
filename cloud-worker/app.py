@@ -404,7 +404,9 @@ def render(job_id: str, spec: RenderRequest) -> dict:
         cmd=["ffmpeg","-hide_banner","-loglevel","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-thread_queue_size","2","-i",str(audio),"-map","0:v","-map","1:a","-t",f"{duration:.3f}","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out_tmp)]
     total_frames=max(1,math.ceil(duration*FPS))
     LOG.info("VIDEO_ENCODE_START job_id=%s frames=%d fps=%d resolution=%dx%d duration_seconds=%.2f", job_id, total_frames, FPS, W, H, duration)
-    encoder=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+    ffmpeg_log=job_dir/"ffmpeg.log"
+    stderr_handle=ffmpeg_log.open("wb")
+    encoder=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=stderr_handle)
     try:
         for n in range(total_frames):
             im=frame_at(spec.video_type,spec.title,states,moves,sans,mate,n/FPS,duration,reveal_end)
@@ -412,10 +414,16 @@ def render(job_id: str, spec: RenderRequest) -> dict:
             del im
             if n % (FPS * 5) == 0:
                 LOG.info("VIDEO_FRAME_PROGRESS job_id=%s frame=%d total=%d", job_id, n, total_frames)
-        encoder.stdin.close(); err=encoder.stderr.read().decode("utf-8","replace")
-        if encoder.wait(timeout=1800)!=0: raise RuntimeError("FFmpeg encode failed: "+err[-900:])
+        encoder.stdin.close()
+        return_code=encoder.wait(timeout=1800)
+        stderr_handle.close()
+        err=ffmpeg_log.read_text(errors="replace")[-900:] if ffmpeg_log.exists() else ""
+        if return_code!=0: raise RuntimeError("FFmpeg encode failed: "+err)
     except Exception:
-        if encoder.poll() is None: encoder.kill(); encoder.wait()
+        if encoder.poll() is None:
+            encoder.kill(); encoder.wait()
+        if not stderr_handle.closed:
+            stderr_handle.close()
         raise
     out_tmp.replace(out)
     LOG.info("VIDEO_ENCODE_COMPLETE job_id=%s", job_id)
