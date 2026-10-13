@@ -1,0 +1,140 @@
+name: Chess Bits Daily Auto Publisher
+
+on:
+  schedule:
+    # Primary publication attempt at 5:00 PM IST.
+    - cron: "30 11 * * *"
+    # Free automatic recovery attempts if the daily upload has not succeeded.
+    - cron: "0 13,15,17,19,21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chess-bits-daily-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout the single source of truth
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check whether an upload is due
+        id: gate
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import date, timedelta, datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+          path = Path("state/published.json")
+          state = json.loads(path.read_text()) if path.exists() else {"published": []}
+          rows = state.get("published", [])
+          target = today if not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
+          needed = target <= today
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"needed={'true' if needed else 'false'}\n")
+              out.write(f"target_date={target.isoformat()}\n")
+          print(f"Upload due: {needed}; target date: {target.isoformat()}")
+          PY
+
+      - name: Install FFmpeg and free Python dependencies
+        if: steps.gate.outputs.needed == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install -r cloud-worker/requirements.txt edge-tts google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
+
+      - name: Fetch Chess.com Neo piece assets
+        if: steps.gate.outputs.needed == 'true'
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            python cloud-worker/fetch_assets.py --out-dir cloud-worker/assets && break
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep $((attempt * 5))
+          done
+
+      - name: Validate all curated lines and visual assets
+        if: steps.gate.outputs.needed == 'true'
+        run: python scripts/chessbits_daily.py --self-test
+
+      - name: Render, quality-check, and upload one public video
+        id: publish
+        if: steps.gate.outputs.needed == 'true'
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          CHESSBITS_NOTIFY_EMAIL: ${{ secrets.CHESSBITS_NOTIFY_EMAIL }}
+        run: python scripts/chessbits_daily.py
+
+      - name: Save the publish ledger so retries cannot repeat successful videos
+        if: always() && steps.gate.outputs.needed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/published.json
+          if git diff --cached --quiet; then
+            echo "No publishing ledger change to save."
+          else
+            git commit -m "Record Chess Bits daily publishing result"
+            git push origin HEAD:main
+          fi
+
+      - name: Send failure alert when SMTP is configured
+        if: failure() && steps.gate.outputs.needed == 'true'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
+          CHESSBITS_NOTIFY_EMAIL: ${{ secrets.CHESSBITS_NOTIFY_EMAIL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TARGET_DATE: ${{ steps.gate.outputs.target_date }}
+        shell: python
+        run: |
+          import os, smtplib
+          from email.message import EmailMessage
+          host = os.getenv("SMTP_HOST", "")
+          user = os.getenv("SMTP_USERNAME", "")
+          password = os.getenv("SMTP_APP_PASSWORD", "")
+          recipient = os.getenv("CHESSBITS_NOTIFY_EMAIL", "")
+          if not all((host, user, password, recipient)):
+              print("SMTP secrets are not configured; the failed run remains visible in GitHub Actions.")
+              raise SystemExit(0)
+          msg = EmailMessage()
+          msg["Subject"] = "Chess Bits automation needs attention"
+          msg["From"] = user
+          msg["To"] = recipient
+          msg.set_content(
+              f"The Chess Bits pipeline did not complete for target date {os.getenv('TARGET_DATE', 'unknown')}.\n"
+              "The workflow has not marked the upload as successful.\n\n"
+              f"Run logs: {os.getenv('RUN_URL', '')}\n"
+              "Automatic recovery will retry on the next scheduled attempt."
+          )
+          port = int(os.getenv("SMTP_PORT") or "465")
+          if port == 465:
+              with smtplib.SMTP_SSL(host, port, timeout=30) as server:
+                  server.login(user, password)
+                  server.send_message(msg)
+          else:
+              with smtplib.SMTP(host, port, timeout=30) as server:
+                  server.starttls()
+                  server.login(user, password)
+                  server.send_message(msg)
