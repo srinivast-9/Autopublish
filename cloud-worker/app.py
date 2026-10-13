@@ -367,14 +367,15 @@ def render(job_id: str, spec: RenderRequest) -> dict:
     W,H=(1080,1920) if spec.video_type=="puzzle_short" else (1920,1080)
     out_tmp=job_dir/"video_part.mp4"; out=job_dir/"video.mp4"
     if music:
-        cmd=["ffmpeg","-hide_banner","-loglevel","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-i",str(audio),"-stream_loop","-1","-i",str(music),"-filter_complex","[1:a]volume=1.0[v];[2:a]volume=0.14[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[a]","-map","0:v","-map","[a]","-t",f"{duration:.3f}","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out_tmp)]
+        cmd=["ffmpeg","-hide_banner","-loglevel","error","-filter_threads","1","-filter_complex_threads","1","-y","-thread_queue_size","2","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-thread_queue_size","2","-i",str(audio),"-stream_loop","-1","-thread_queue_size","2","-i",str(music),"-filter_complex","[1:a]volume=1.0[v];[2:a]volume=0.14[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[a]","-map","0:v","-map","[a]","-t",f"{duration:.3f}","-c:v","libx264","-preset","ultrafast","-tune","zerolatency","-threads:v","1","-crf","21","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-threads:a","1","-b:a","160k","-ar","48000","-movflags","+faststart",str(out_tmp)]
     else:
-        cmd=["ffmpeg","-hide_banner","-loglevel","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-i",str(audio),"-map","0:v","-map","1:a","-t",f"{duration:.3f}","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out_tmp)]
+        cmd=["ffmpeg","-hide_banner","-loglevel","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-thread_queue_size","2","-i",str(audio),"-map","0:v","-map","1:a","-t",f"{duration:.3f}","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out_tmp)]
     encoder=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
     try:
         for n in range(max(1,math.ceil(duration*FPS))):
             im=frame_at(spec.video_type,spec.title,states,moves,sans,mate,n/FPS,duration,reveal_end)
             encoder.stdin.write(np.asarray(im,dtype=np.uint8).tobytes())
+            del im
         encoder.stdin.close(); err=encoder.stderr.read().decode("utf-8","replace")
         if encoder.wait(timeout=1800)!=0: raise RuntimeError("FFmpeg encode failed: "+err[-900:])
     except Exception:
