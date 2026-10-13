@@ -37,7 +37,7 @@ Automatic publishing cannot start until the channel authorizes an unattended upl
 
 Never put these values in source files, workflow YAML, issues, or chat. If the refresh token is revoked, rerun the local setup and replace the secret.
 
-**Important YouTube restriction:** Google currently restricts uploads from unverified YouTube API projects to private viewing until the project passes its YouTube API compliance audit. Submit and complete that audit in Google's developer console/process before expecting public daily videos. The workflow checks public visibility and will report failure rather than claiming that a private upload is public. This audit is free but is external to this repository; code cannot bypass it.
+**Important YouTube restriction:** Google currently restricts uploads from unverified YouTube API projects created after July 28, 2020 to private viewing until the project passes its YouTube API compliance audit. Moving OAuth consent to Production prevents the seven-day Testing-token expiry; it does **not** replace the separate YouTube API compliance audit required for public uploads. See [Google OAuth token lifetime](https://developers.google.com/identity/protocols/oauth2/) and [YouTube API upload policy](https://developers.google.com/youtube/v3/docs/videos/). The workflow checks public visibility and will report failure rather than claiming that a private upload is public. This audit is free but is external to this repository; code cannot bypass it.
 
 ### 2. Optional email notifications
 
