@@ -30,7 +30,7 @@ Automatic publishing cannot start until the channel authorizes an unattended upl
    ```
 
 4. Sign in to the Google account that owns the **Chess Bits** YouTube channel and approve the requested read/upload permissions.
-5. The script prints three values. Add them under GitHub repository **Settings → Secrets and variables → Actions → New repository secret**:
+5. The script requests upload/read access plus the YouTube scope needed to recover a video that was accepted but left private. The automation never deletes existing videos. The script prints three values. Add them under GitHub repository **Settings → Secrets and variables → Actions → New repository secret**:
    - `YOUTUBE_CLIENT_ID`
    - `YOUTUBE_CLIENT_SECRET`
    - `YOUTUBE_REFRESH_TOKEN`
