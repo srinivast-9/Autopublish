@@ -45,7 +45,6 @@ OUT_DIR = ROOT / "output"
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
-    "https://www.googleapis.com/auth/youtube",  # only used to recover the visibility status of our own uploads
 ]
 MUSIC = [
     {
@@ -327,9 +326,8 @@ def find_existing_upload(service, uploads_playlist: str, marker: str):
 
 
 def ensure_public(service, video_id: str) -> dict:
-    """Wait for public visibility and successful YouTube processing before declaring success."""
-    update_attempted = False
-    for attempt in range(90):  # up to 15 minutes; later scheduled runs safely resume by video marker
+    """Verify that the newly requested public upload is actually public and processed."""
+    for attempt in range(90):  # up to 15 minutes; scheduled retries resume by the stable video marker
         response = service.videos().list(
             part="snippet,status,processingDetails", id=video_id
         ).execute()
@@ -348,23 +346,12 @@ def ensure_public(service, video_id: str) -> dict:
             raise RuntimeError(
                 f"YouTube processing failed for video {video_id}: {processing.get('processingFailureReason', 'unknown reason')}"
             )
-        if status.get("privacyStatus") != "public" and not update_attempted:
-            update_attempted = True
-            try:
-                service.videos().update(
-                    part="status",
-                    body={"id": video_id, "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}},
-                ).execute()
-            except HttpError as exc:
-                raise RuntimeError(
-                    "YouTube accepted the upload but would not make it public. Complete Google's YouTube API "
-                    "compliance audit and check channel permissions. The video was not deleted."
-                ) from exc
-        if (
-            status.get("privacyStatus") == "public"
-            and upload_status == "processed"
-            and processing_status == "succeeded"
-        ):
+        if status.get("privacyStatus") != "public":
+            raise RuntimeError(
+                "YouTube did not accept the requested public visibility. Check the YouTube API compliance audit "
+                "and channel settings. For safety, the automation will not change the privacy of an existing video."
+            )
+        if upload_status == "processed" and processing_status == "succeeded":
             return item
         if attempt % 6 == 0:
             print(
@@ -374,8 +361,8 @@ def ensure_public(service, video_id: str) -> dict:
             )
         time.sleep(10)
     raise RuntimeError(
-        "YouTube has not confirmed both public visibility and successful processing within 15 minutes. "
-        "The daily retry will resume by video marker instead of intentionally uploading a duplicate."
+        "YouTube has not confirmed successful processing within 15 minutes. "
+        "The scheduled retry will resume by video marker instead of intentionally uploading a duplicate."
     )
 
 
@@ -415,8 +402,8 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
                 "stopping to avoid duplicate public videos."
             )
         item = ensure_public(service, existing["video_id"])
-        thumbnail_set = set_start_position_thumbnail(service, existing["video_id"], thumbnail_path)
-        return existing["video_id"], item, thumbnail_set
+        # Existing uploads are never edited; thumbnail-setting happens only on fresh inserts.
+        return existing["video_id"], item, False
 
     body = {
         "snippet": {
@@ -442,8 +429,9 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
             video_id = response.get("id")
             if not video_id:
                 raise RuntimeError("YouTube upload completed without returning a video id.")
-            verified = ensure_public(service, video_id)
+            # Thumbnail is part of creating this fresh upload, not a repair to older channel content.
             thumbnail_set = set_start_position_thumbnail(service, video_id, thumbnail_path)
+            verified = ensure_public(service, video_id)
             return video_id, verified, thumbnail_set
         except Exception as exc:
             last_error = exc
@@ -452,8 +440,7 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
                 existing = find_existing_upload(service, uploads_playlist, marker)
                 if existing and existing["upload_status"] not in ("failed", "rejected", "deleted"):
                     item = ensure_public(service, existing["video_id"])
-                    thumbnail_set = set_start_position_thumbnail(service, existing["video_id"], thumbnail_path)
-                    return existing["video_id"], item, thumbnail_set
+                    return existing["video_id"], item, False
             except Exception:
                 pass
             if attempt < 2:
