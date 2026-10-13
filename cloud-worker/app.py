@@ -37,7 +37,7 @@ MAX_AUDIO = 100 * 1024 * 1024
 MAX_TOTAL_AUDIO = 250 * 1024 * 1024
 MAX_DURATION = 900
 FPS = 12
-ALLOWED_SUFFIXES = (".cloudfront.net", ".runwayml.com", ".runway.com", ".pixabay.com", ".pixabaycdn.com", ".ncs.io")
+ALLOWED_SUFFIXES = (".cloudfront.net", ".runwayml.com", ".runway.com", ".pixabay.com", ".pixabaycdn.com", ".ncs.io", ".googleapis.com")
 TRANSIENT = (408, 425, 429, 500, 502, 503, 504)
 LOG = logging.getLogger("chessbits")
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format="%(asctime)s %(levelname)s %(message)s")
@@ -414,6 +414,7 @@ def do_job(job: str, spec: RenderRequest, base: str) -> None:
         if not root.startswith("https://"): raise RuntimeError("PUBLIC_BASE_URL must use HTTPS")
         result["media_url"]=f"{root}/media/{job}.mp4?expires={exp}&sig={signature(job,exp)}"
         set_job(job,status="completed",result=result,completed_at=int(time.time()))
+        LOG.info("CHESSBITS_RENDER_COMPLETED job_id=%s media_url=%s sha256=%s duration_seconds=%s", job, result["media_url"], result["sha256"], result["duration_seconds"])
     except Exception as exc:
         LOG.exception("Render job %s failed",job)
         set_job(job,status="failed",error=str(exc)[:800],failed_at=int(time.time()))
@@ -429,6 +430,21 @@ def startup() -> None:
     DATA.mkdir(parents=True,exist_ok=True); JOBS_DIR.mkdir(parents=True,exist_ok=True)
     try: load_pieces(); LOG.info("Loaded %d Chess.com Neo sprites",len(PIECES))
     except Exception: LOG.exception("Failed to load chess piece sprites")
+    # Explicit one-shot deployment hook; leave unset during normal service operation.
+    raw = os.getenv("CHESSBITS_STARTUP_RENDER_JSON", "").strip()
+    if raw:
+        try:
+            spec = RenderRequest.model_validate_json(raw)
+            for url in spec.voiceover_urls: validate_url(url)
+            if spec.music_url: validate_url(spec.music_url)
+            parse_pgn(spec.pgn, spec.require_checkmate or spec.video_type == "puzzle_short")
+            job = uuid.uuid4().hex
+            with LOCK:
+                JOBS[job] = {"job_id": job, "status": "queued", "created_at": int(time.time()), "video_type": spec.video_type, "title": spec.title}
+            LOG.info("CHESSBITS_STARTUP_RENDER_QUEUED job_id=%s title=%s", job, spec.title)
+            threading.Thread(target=do_job, args=(job, spec, PUBLIC_BASE_URL), daemon=True).start()
+        except Exception:
+            LOG.exception("CHESSBITS_STARTUP_RENDER_REJECTED")
 
 
 @app.get("/health")
