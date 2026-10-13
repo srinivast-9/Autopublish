@@ -45,6 +45,7 @@ OUT_DIR = ROOT / "output"
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube",  # only used to recover the visibility status of our own uploads
 ]
 MUSIC = [
     {
@@ -320,12 +321,14 @@ def find_existing_upload(service, uploads_playlist: str, marker: str):
                     "title": snippet.get("title", ""),
                     "privacy": status.get("privacyStatus", ""),
                     "upload_status": status.get("uploadStatus", ""),
+                    "tags": snippet.get("tags", []),
                 }
     return None
 
 
 def ensure_public(service, video_id: str) -> dict:
-    last = {}
+    """Verify public visibility and give the owner-authorized API one safe chance to fix status."""
+    update_attempted = False
     for attempt in range(18):
         response = service.videos().list(part="snippet,status", id=video_id).execute()
         items = response.get("items", [])
@@ -333,10 +336,10 @@ def ensure_public(service, video_id: str) -> dict:
             raise RuntimeError(f"YouTube did not return uploaded video {video_id}.")
         item = items[0]
         status = item.get("status", {})
-        last = status
         if status.get("uploadStatus") in ("failed", "rejected", "deleted"):
             raise RuntimeError(f"YouTube rejected or failed video {video_id}: {status}")
-        if status.get("privacyStatus") != "public":
+        if status.get("privacyStatus") != "public" and not update_attempted:
+            update_attempted = True
             try:
                 service.videos().update(
                     part="status",
@@ -344,20 +347,16 @@ def ensure_public(service, video_id: str) -> dict:
                 ).execute()
             except HttpError as exc:
                 raise RuntimeError(
-                    "YouTube accepted the upload but would not make it public. Check whether the YouTube API "
-                    "project has completed Google's required upload audit. The video was not deleted."
+                    "YouTube accepted the upload but would not make it public. Complete Google's YouTube API "
+                    "compliance audit and check channel permissions. The video was not deleted."
                 ) from exc
-        time.sleep(10)
-        response = service.videos().list(part="snippet,status", id=video_id).execute()
-        item = (response.get("items") or [{}])[0]
-        status = item.get("status", {})
         if status.get("privacyStatus") == "public" and status.get("uploadStatus") not in ("failed", "rejected", "deleted"):
             return item
-    if last.get("privacyStatus") != "public":
-        raise RuntimeError(
-            "Upload is present but is not public; automated publishing is blocked, possibly by the YouTube API project audit."
-        )
-    return {"id": video_id, "status": last, "snippet": {}}
+        time.sleep(10)
+    raise RuntimeError(
+        "Upload is present but did not become public within the verification window. "
+        "The workflow will retry without intentionally creating a duplicate."
+    )
 
 
 def publish_video(service, uploads_playlist: str, video_path: Path, title: str, description: str,
@@ -717,6 +716,10 @@ def main() -> int:
             "video_id": existing["video_id"], "url": f"https://www.youtube.com/watch?v={existing['video_id']}",
             "published_at": datetime.now(TZ).isoformat(), "recovered": True,
         }
+        existing_tags = set(existing.get("tags", []))
+        row["kind"] = "puzzle" if "ChessBitsPuzzle" in existing_tags else "opening"
+        row["topic_id"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("ChessBitsTopic:")), "recovered-upload")
+        row["puzzle_id"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("LichessPuzzle:")), None)
         state.setdefault("published", []).append(row)
         state["published"] = state["published"][-400:]
         save_state(state)
@@ -764,6 +767,7 @@ def main() -> int:
     video_path = OUT_DIR / "chess-bits-daily.mp4"
     asyncio.run(create_voiceover(script, voice_path))
     qa = render_video(pgn, mode, title, voice_path, video_path, music_path)
+    tags = tags + (["ChessBitsPuzzle", f"LichessPuzzle:{puzzle_meta[\"id\"]}"] if puzzle_meta else ["ChessBitsOpening", f"ChessBitsTopic:{topic_id}"])
     video_id, verified = publish_video(
         service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short"
     )
