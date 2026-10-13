@@ -439,9 +439,23 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
             try:
                 existing = find_existing_upload(service, uploads_playlist, marker)
                 if existing and existing["upload_status"] not in ("failed", "rejected", "deleted"):
-                    item = ensure_public(service, existing["video_id"])
+                    if existing.get("privacy") != "public":
+                        raise RuntimeError(
+                            f"YouTube already accepted video {existing['video_id']} but it is not public. "
+                            "Refusing to upload a duplicate; check the YouTube API compliance audit."
+                        ) from exc
+                    try:
+                        item = ensure_public(service, existing["video_id"])
+                    except Exception as verify_exc:
+                        raise RuntimeError(
+                            f"YouTube already accepted video {existing['video_id']} for this date, but processing/public "
+                            "verification is incomplete. Refusing to upload a duplicate; the next scheduled run will resume."
+                        ) from verify_exc
                     return existing["video_id"], item, False
+            except RuntimeError:
+                raise
             except Exception:
+                # No accepted video was found; only then is a fresh upload retry safe.
                 pass
             if attempt < 2:
                 time.sleep(5 * (attempt + 1))
