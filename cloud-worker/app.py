@@ -14,6 +14,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from functools import lru_cache
 from urllib.parse import urljoin, urlparse
 
 import chess
@@ -213,6 +214,7 @@ def parse_pgn(text: str, must_mate: bool) -> tuple[list[chess.Board], list[chess
     return states, moves, sans, mate
 
 
+@lru_cache(maxsize=64)
 def font(size: int, bold: bool = True):
     options = ["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"]
     for name in options:
@@ -221,7 +223,8 @@ def font(size: int, bold: bool = True):
     return ImageFont.load_default()
 
 
-def background(size: tuple[int, int]) -> Image.Image:
+@lru_cache(maxsize=4)
+def _background_base(size: tuple[int, int]) -> Image.Image:
     w, h = size
     top = np.array((14, 19, 22), dtype=np.float32)
     bot = np.array((8, 11, 15), dtype=np.float32)
@@ -235,6 +238,11 @@ def background(size: tuple[int, int]) -> Image.Image:
     return base
 
 
+def background(size: tuple[int, int]) -> Image.Image:
+    return _background_base(size).copy()
+
+
+@lru_cache(maxsize=4)
 def board_template(square: int) -> Image.Image:
     pad = max(10, square // 12)
     total = square + 2 * pad
@@ -271,7 +279,7 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
     short = mode == "puzzle_short"
     W,H = (1080,1920) if short else (1920,1080)
     square = 920 if short else 790
-    template = board_template(square)
+    template = board_template(square).copy()
     x = (W-template.width)//2 if short else 60
     y = 430 if short else (H-template.height)//2
     frame = background((W,H))
