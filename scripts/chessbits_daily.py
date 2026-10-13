@@ -767,7 +767,10 @@ def main() -> int:
     video_path = OUT_DIR / "chess-bits-daily.mp4"
     asyncio.run(create_voiceover(script, voice_path))
     qa = render_video(pgn, mode, title, voice_path, video_path, music_path)
-    tags = tags + (["ChessBitsPuzzle", f"LichessPuzzle:{puzzle_meta[\"id\"]}"] if puzzle_meta else ["ChessBitsOpening", f"ChessBitsTopic:{topic_id}"])
+    if puzzle_meta:
+        tags = tags + ["ChessBitsPuzzle", "LichessPuzzle:" + str(puzzle_meta["id"])]
+    else:
+        tags = tags + ["ChessBitsOpening", "ChessBitsTopic:" + str(topic_id)]
     video_id, verified = publish_video(
         service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short"
     )
