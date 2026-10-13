@@ -26,9 +26,13 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Check whether an upload is due
+      - name: Check whether an upload is due and OAuth is configured
         id: gate
         shell: bash
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: |
           python - <<'PY'
           import json, os
@@ -41,14 +45,22 @@ jobs:
           rows = state.get("published", [])
           target = today if not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
           needed = target <= today
+          configured = all(os.getenv(key, "").strip() for key in (
+              "YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN"
+          ))
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write(f"needed={'true' if needed else 'false'}\n")
+              out.write(f"configured={'true' if configured else 'false'}\n")
               out.write(f"target_date={target.isoformat()}\n")
-          print(f"Upload due: {needed}; target date: {target.isoformat()}")
+          print(f"Upload due: {needed}; target date: {target.isoformat()}; OAuth configured: {configured}")
           PY
 
+      - name: Explain the one-time setup blocker
+        if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured != 'true'
+        run: echo "No rendering or upload attempted. Add YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN as repository Actions secrets using README.md."
+
       - name: Install FFmpeg and free Python dependencies
-        if: steps.gate.outputs.needed == 'true'
+        if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
@@ -56,7 +68,7 @@ jobs:
           python -m pip install -r cloud-worker/requirements.txt edge-tts google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
 
       - name: Fetch Chess.com Neo piece assets
-        if: steps.gate.outputs.needed == 'true'
+        if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         shell: bash
         run: |
           for attempt in 1 2 3; do
@@ -66,12 +78,12 @@ jobs:
           done
 
       - name: Validate all curated lines and visual assets
-        if: steps.gate.outputs.needed == 'true'
+        if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         run: python scripts/chessbits_daily.py --self-test
 
       - name: Render, quality-check, and upload one public video
         id: publish
-        if: steps.gate.outputs.needed == 'true'
+        if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -84,7 +96,7 @@ jobs:
         run: python scripts/chessbits_daily.py
 
       - name: Save the publish ledger so retries cannot repeat successful videos
-        if: always() && steps.gate.outputs.needed == 'true'
+        if: always() && steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -98,7 +110,7 @@ jobs:
           fi
 
       - name: Send failure alert when SMTP is configured
-        if: failure() && steps.gate.outputs.needed == 'true'
+        if: failure() && steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
