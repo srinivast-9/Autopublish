@@ -103,6 +103,8 @@ def check_redirect(url: str) -> None:
 
 def download_audio(url: str, target: Path, current_total: int) -> int:
     current = validate_url(url)
+    host = urlparse(current).hostname or "unknown"
+    LOG.info("AUDIO_DOWNLOAD_START host=%s target=%s current_total=%d", host, target.name, current_total)
     last: Exception | None = None
     with requests.Session() as session:
         for attempt in range(3):
@@ -111,6 +113,8 @@ def download_audio(url: str, target: Path, current_total: int) -> int:
                 tmp.unlink(missing_ok=True)
                 for _ in range(6):
                     with session.get(current, stream=True, timeout=(10, 45), allow_redirects=False) as resp:
+                        host = urlparse(current).hostname or "unknown"
+                        LOG.info("AUDIO_HTTP_RESPONSE host=%s status=%d attempt=%d", host, resp.status_code, attempt + 1)
                         if resp.is_redirect or resp.is_permanent_redirect:
                             loc = resp.headers.get("Location")
                             if not loc:
@@ -138,16 +142,19 @@ def download_audio(url: str, target: Path, current_total: int) -> int:
                         if size < 1024:
                             raise RuntimeError("Audio file too small")
                         tmp.replace(target)
+                        LOG.info("AUDIO_DOWNLOAD_COMPLETE host=%s file=%s bytes=%d", host, target.name, size)
                         return size
                 raise RuntimeError("Too many redirects")
             except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as exc:
                 last = exc
+                LOG.warning("AUDIO_DOWNLOAD_RETRY host=%s attempt=%d error=%s", urlparse(current).hostname or "unknown", attempt + 1, type(exc).__name__)
                 if isinstance(exc, requests.HTTPError) and not any(str(code) in str(exc) for code in TRANSIENT):
                     break
                 if attempt < 2:
                     time.sleep(0.8 * (attempt + 1))
             except Exception as exc:
                 last = exc
+                LOG.exception("AUDIO_DOWNLOAD_ABORT host=%s attempt=%d", urlparse(current).hostname or "unknown", attempt + 1)
                 break
             finally:
                 tmp.unlink(missing_ok=True)
@@ -155,6 +162,7 @@ def download_audio(url: str, target: Path, current_total: int) -> int:
 
 
 def probe_audio(path: Path) -> dict:
+    LOG.info("AUDIO_PROBE_START file=%s size_bytes=%d", path.name, path.stat().st_size if path.exists() else -1)
     raw = run(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)], 60)
     info = json.loads(raw.stdout)
     audios = [s for s in info.get("streams", []) if s.get("codec_type") == "audio"]
@@ -164,18 +172,22 @@ def probe_audio(path: Path) -> dict:
     if duration <= 0 or duration > MAX_DURATION:
         raise RuntimeError(f"Audio duration must be 0–{MAX_DURATION} seconds")
     run(["ffmpeg", "-v", "error", "-xerror", "-i", str(path), "-f", "null", "-"], min(900, max(60, int(duration * 2))))
+    LOG.info("AUDIO_PROBE_COMPLETE file=%s duration_seconds=%.2f codec=%s", path.name, duration, audios[0].get("codec_name", "unknown"))
     return {"duration": duration, "codec": audios[0].get("codec_name", "unknown")}
 
 
 def make_narration(urls: list[str], work: Path) -> tuple[Path, dict]:
     parts = []
     downloaded = 0
+    LOG.info("NARRATION_PREPARE segments=%d", len(urls))
     for idx, url in enumerate(urls):
         validate_url(url)
+        LOG.info("NARRATION_SEGMENT_START index=%d", idx)
         path = work / f"narration_{idx}.audio"
         downloaded += download_audio(url, path, downloaded)
         probe_audio(path)
         parts.append(path)
+        LOG.info("NARRATION_SEGMENT_READY index=%d", idx)
     output = work / "narration.mp3"
     if len(parts) == 1:
         run(["ffmpeg", "-y", "-i", str(parts[0]), "-vn", "-ac", "2", "-ar", "48000", "-b:a", "192k", str(output)], 900)
@@ -360,15 +372,19 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
 
 
 def render(job_id: str, spec: RenderRequest) -> dict:
+    LOG.info("RENDER_START job_id=%s type=%s title=%s", job_id, spec.video_type, spec.title)
     job_dir=JOBS_DIR/job_id
     job_dir.mkdir(parents=True,exist_ok=False)
     for u in spec.voiceover_urls: validate_url(u)
     if spec.music_url: validate_url(spec.music_url)
     states,moves,sans,mate=parse_pgn(spec.pgn,spec.require_checkmate or spec.video_type=="puzzle_short")
     audio,audio_meta=make_narration(spec.voiceover_urls,job_dir)
+    LOG.info("NARRATION_READY job_id=%s duration_seconds=%.2f", job_id, audio_meta["duration"])
     music=None; music_meta=None
     if spec.music_url:
+        LOG.info("MUSIC_DOWNLOAD_START job_id=%s", job_id)
         music=job_dir/"music.audio"; download_audio(spec.music_url,music,0); music_meta=probe_audio(music)
+        LOG.info("MUSIC_READY job_id=%s duration_seconds=%.2f", job_id, music_meta["duration"])
     duration=audio_meta["duration"]
     final_hold=max(2.3 if mate else 1.5,duration*(.12 if spec.video_type=="puzzle_short" else .23))
     reveal_end=max(.5,duration-final_hold)
@@ -378,18 +394,23 @@ def render(job_id: str, spec: RenderRequest) -> dict:
         cmd=["ffmpeg","-hide_banner","-loglevel","error","-filter_threads","1","-filter_complex_threads","1","-y","-thread_queue_size","2","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-thread_queue_size","2","-i",str(audio),"-stream_loop","-1","-thread_queue_size","2","-i",str(music),"-filter_complex","[1:a]volume=1.0[v];[2:a]volume=0.14[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[a]","-map","0:v","-map","[a]","-t",f"{duration:.3f}","-c:v","libx264","-preset","ultrafast","-tune","zerolatency","-threads:v","1","-crf","21","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-threads:a","1","-b:a","160k","-ar","48000","-movflags","+faststart",str(out_tmp)]
     else:
         cmd=["ffmpeg","-hide_banner","-loglevel","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(FPS),"-i","pipe:0","-thread_queue_size","2","-i",str(audio),"-map","0:v","-map","1:a","-t",f"{duration:.3f}","-c:v","libx264","-preset","veryfast","-crf","20","-pix_fmt","yuv420p","-r","30","-fps_mode","cfr","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(out_tmp)]
+    total_frames=max(1,math.ceil(duration*FPS))
+    LOG.info("VIDEO_ENCODE_START job_id=%s frames=%d fps=%d resolution=%dx%d duration_seconds=%.2f", job_id, total_frames, FPS, W, H, duration)
     encoder=subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
     try:
-        for n in range(max(1,math.ceil(duration*FPS))):
+        for n in range(total_frames):
             im=frame_at(spec.video_type,spec.title,states,moves,sans,mate,n/FPS,duration,reveal_end)
             encoder.stdin.write(np.asarray(im,dtype=np.uint8).tobytes())
             del im
+            if n % (FPS * 15) == 0:
+                LOG.info("VIDEO_FRAME_PROGRESS job_id=%s frame=%d total=%d", job_id, n, total_frames)
         encoder.stdin.close(); err=encoder.stderr.read().decode("utf-8","replace")
         if encoder.wait(timeout=1800)!=0: raise RuntimeError("FFmpeg encode failed: "+err[-900:])
     except Exception:
         if encoder.poll() is None: encoder.kill(); encoder.wait()
         raise
     out_tmp.replace(out)
+    LOG.info("VIDEO_ENCODE_COMPLETE job_id=%s", job_id)
     info=json.loads(run(["ffprobe","-v","error","-show_streams","-show_format","-of","json",str(out)],90).stdout)
     video=next((s for s in info.get("streams",[]) if s.get("codec_type")=="video"),None)
     audio_stream=next((s for s in info.get("streams",[]) if s.get("codec_type")=="audio"),None)
