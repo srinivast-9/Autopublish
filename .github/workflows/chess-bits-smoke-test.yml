@@ -1,0 +1,43 @@
+name: Chess Bits Automation Smoke Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/**"
+      - "cloud-worker/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: cloud-worker/requirements.txt
+
+      - name: Install free test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install -r cloud-worker/requirements.txt edge-tts google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2
+
+      - name: Python syntax validation
+        run: python -m py_compile scripts/chessbits_daily.py scripts/create_youtube_refresh_token.py cloud-worker/app.py cloud-worker/fetch_assets.py
+
+      - name: Fetch Neo pieces and validate every opening line
+        run: |
+          python cloud-worker/fetch_assets.py --out-dir cloud-worker/assets
+          python scripts/chessbits_daily.py --self-test
