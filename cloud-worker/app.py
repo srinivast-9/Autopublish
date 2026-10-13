@@ -278,11 +278,19 @@ def board_template(square: int) -> Image.Image:
     return im
 
 
+@lru_cache(maxsize=64)
+def scaled_piece(code: str, height: int) -> Image.Image:
+    source = PIECES[code]
+    width = max(1, round(source.width * height / source.height))
+    return source.resize((width, height), Image.Resampling.LANCZOS)
+
+
 def draw_piece(board_img: Image.Image, piece: chess.Piece, file: int, rank_from_top: int, pad: int, square: int) -> None:
     s = square / 8
-    sprite = PIECES[("w" if piece.color else "b") + piece.symbol().upper()]
-    height = int(s * .88); width = max(1, round(sprite.width * height / sprite.height))
-    sprite = sprite.resize((width, height), Image.Resampling.LANCZOS)
+    code = ("w" if piece.color else "b") + piece.symbol().upper()
+    height = int(s * .88)
+    sprite = scaled_piece(code, height)
+    width = sprite.width
     board_img.alpha_composite(sprite, (pad + int(file*s) + (int(s)-width)//2, pad + int(rank_from_top*s) + (int(s)-height)//2 + int(s*.02)))
 
 
@@ -355,8 +363,8 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
             f0=chess.square_file(move.from_square); r0=7-chess.square_rank(move.from_square)
             f1=chess.square_file(move.to_square); r1=7-chess.square_rank(move.to_square)
             eased=prog*prog*(3-2*prog); s=square/8
-            sprite=PIECES[("w" if moving.color else "b")+moving.symbol().upper()]
-            h=int(s*.88); w=max(1,round(sprite.width*h/sprite.height)); sprite=sprite.resize((w,h),Image.Resampling.LANCZOS)
+            code=("w" if moving.color else "b")+moving.symbol().upper()
+            h=int(s*.88); sprite=scaled_piece(code,h); w=sprite.width
             px=int(pad+(f0+(f1-f0)*eased)*s+(s-w)//2); py=int(pad+(r0+(r1-r0)*eased)*s+(s-h)//2+s*.02)
             template.alpha_composite(sprite,(px,py))
         if state.is_castling(move):
@@ -365,7 +373,7 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
             rook=state.piece_at(chess.square(rf,chess.square_rank(move.from_square)))
             if rook:
                 f0=rf; r0=7-chess.square_rank(move.from_square); f1=rt; r1=r0; e=prog*prog*(3-2*prog); s=square/8
-                spr=PIECES[("w" if rook.color else "b")+"R"]; h=int(s*.88); w=max(1,round(spr.width*h/spr.height)); spr=spr.resize((w,h),Image.Resampling.LANCZOS)
+                h=int(s*.88); spr=scaled_piece(("w" if rook.color else "b")+"R",h); w=spr.width
                 template.alpha_composite(spr,(int(pad+(f0+(f1-f0)*e)*s+(s-w)//2),int(pad+r0*s+(s-h)//2+s*.02)))
     frame.alpha_composite(template,(x,y))
     return frame.convert("RGB")
@@ -402,7 +410,7 @@ def render(job_id: str, spec: RenderRequest) -> dict:
             im=frame_at(spec.video_type,spec.title,states,moves,sans,mate,n/FPS,duration,reveal_end)
             encoder.stdin.write(np.asarray(im,dtype=np.uint8).tobytes())
             del im
-            if n % (FPS * 15) == 0:
+            if n % (FPS * 5) == 0:
                 LOG.info("VIDEO_FRAME_PROGRESS job_id=%s frame=%d total=%d", job_id, n, total_frames)
         encoder.stdin.close(); err=encoder.stderr.read().decode("utf-8","replace")
         if encoder.wait(timeout=1800)!=0: raise RuntimeError("FFmpeg encode failed: "+err[-900:])
