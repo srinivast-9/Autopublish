@@ -1,6 +1,10 @@
 name: Chess Bits Daily Auto Publisher
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/chess-bits-daily.yml"
   schedule:
     # Primary publication attempt at 5:00 PM IST.
     - cron: "30 11 * * *"
@@ -57,7 +61,10 @@ jobs:
 
       - name: Explain the one-time setup blocker
         if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured != 'true'
-        run: echo "No rendering or upload attempted. Add YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN as repository Actions secrets using README.md."
+        run: |
+          echo "::error::No rendering or upload attempted because YouTube OAuth secrets are missing."
+          echo "Add YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET and YOUTUBE_REFRESH_TOKEN under GitHub Settings > Secrets and variables > Actions."
+          exit 1
 
       - name: Install FFmpeg and free Python dependencies
         if: steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
