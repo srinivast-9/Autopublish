@@ -379,8 +379,33 @@ def ensure_public(service, video_id: str) -> dict:
     )
 
 
+def set_start_position_thumbnail(service, video_id: str, thumbnail_path: Path | None) -> bool:
+    """Attempt to use the initial chess position as the video's custom thumbnail."""
+    if not thumbnail_path or not thumbnail_path.is_file():
+        print("THUMBNAIL_SKIPPED: start-position image unavailable.", flush=True)
+        return False
+    for attempt in range(3):
+        try:
+            service.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(str(thumbnail_path), mimetype="image/jpeg", resumable=False),
+            ).execute()
+            print(f"THUMBNAIL_SET video_id={video_id}", flush=True)
+            return True
+        except HttpError as exc:
+            status = getattr(exc.resp, "status", None)
+            print(f"THUMBNAIL_SET_FAILED video_id={video_id} http_status={status}", flush=True)
+            if status not in (408, 425, 429, 500, 502, 503, 504):
+                return False
+        except Exception as exc:
+            print(f"THUMBNAIL_SET_RETRY video_id={video_id} attempt={attempt + 1} type={type(exc).__name__}", flush=True)
+        if attempt < 2:
+            time.sleep(3 * (attempt + 1))
+    return False
+
+
 def publish_video(service, uploads_playlist: str, video_path: Path, title: str, description: str,
-                  tags: list[str], target: date, short: bool) -> tuple[str, dict]:
+                  tags: list[str], target: date, short: bool, thumbnail_path: Path | None = None) -> tuple[str, dict, bool]:
     marker = marker_for(target)
     existing = find_existing_upload(service, uploads_playlist, marker)
     if existing:
@@ -390,7 +415,8 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
                 "stopping to avoid duplicate public videos."
             )
         item = ensure_public(service, existing["video_id"])
-        return existing["video_id"], item
+        thumbnail_set = set_start_position_thumbnail(service, existing["video_id"], thumbnail_path)
+        return existing["video_id"], item, thumbnail_set
 
     body = {
         "snippet": {
@@ -417,7 +443,8 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
             if not video_id:
                 raise RuntimeError("YouTube upload completed without returning a video id.")
             verified = ensure_public(service, video_id)
-            return video_id, verified
+            thumbnail_set = set_start_position_thumbnail(service, video_id, thumbnail_path)
+            return video_id, verified, thumbnail_set
         except Exception as exc:
             last_error = exc
             # Before a new attempt, detect whether YouTube accepted the upload before the connection failed.
@@ -425,7 +452,8 @@ def publish_video(service, uploads_playlist: str, video_path: Path, title: str, 
                 existing = find_existing_upload(service, uploads_playlist, marker)
                 if existing and existing["upload_status"] not in ("failed", "rejected", "deleted"):
                     item = ensure_public(service, existing["video_id"])
-                    return existing["video_id"], item
+                    thumbnail_set = set_start_position_thumbnail(service, existing["video_id"], thumbnail_path)
+                    return existing["video_id"], item, thumbnail_set
             except Exception:
                 pass
             if attempt < 2:
@@ -607,7 +635,7 @@ def download_short_music(target: date, out_path: Path) -> tuple[Path, dict]:
 
 
 def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Path,
-                 music_path: Path | None) -> dict:
+                 music_path: Path | None, thumbnail_path: Path) -> dict:
     states, moves, sans, mate = renderer.parse_pgn(pgn, False)
     duration = probe_audio(voice_path)
     if mode == "puzzle_short" and duration > 180:
@@ -618,6 +646,12 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
     total_frames = max(1, math.ceil(duration * renderer.FPS))
     final_hold = max(2.3 if mate else 1.5, duration * (0.12 if mode == "puzzle_short" else 0.23))
     reveal_end = max(0.5, duration - final_hold)
+    # Save a clean initial-position frame for the YouTube thumbnail.
+    thumb_frame = renderer.frame_at(mode, title, states, moves, sans, mate, 0.0, duration, reveal_end)
+    thumb_frame.save(thumbnail_path, format="JPEG", quality=94, optimize=True)
+    thumb_frame.close()
+    if not thumbnail_path.is_file() or thumbnail_path.stat().st_size < 5_000 or thumbnail_path.stat().st_size > 2_000_000:
+        raise RuntimeError("Thumbnail QA failed: missing, too small, or larger than 2 MB.")
     temporary = out_path.with_name("video_part.mp4")
     ffmpeg_log = out_path.with_name("ffmpeg.log")
     cmd = [
@@ -799,13 +833,14 @@ def main() -> int:
     voice_path = OUT_DIR / "voiceover.mp3"
     video_path = OUT_DIR / "chess-bits-daily.mp4"
     asyncio.run(create_voiceover(script, voice_path))
-    qa = render_video(pgn, mode, title, voice_path, video_path, music_path)
+    thumbnail_path = OUT_DIR / "start-position.jpg"
+    qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path)
     if puzzle_meta:
         tags = tags + ["ChessBitsPuzzle", "LichessPuzzle:" + str(puzzle_meta["id"])]
     else:
         tags = tags + ["ChessBitsOpening", "ChessBitsTopic:" + str(topic_id)]
-    video_id, verified = publish_video(
-        service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short"
+    video_id, verified, thumbnail_set = publish_video(
+        service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short", thumbnail_path
     )
     final_status = verified.get("status", {})
     if final_status.get("privacyStatus") != "public":
@@ -822,6 +857,7 @@ def main() -> int:
         "puzzle_id": puzzle_meta["id"] if puzzle_meta else None,
         "puzzle_rating": puzzle_meta["rating"] if puzzle_meta else None,
         "music_track": music_meta["id"] if music_meta else None,
+        "start_position_thumbnail_set": thumbnail_set,
     }
     state.setdefault("published", []).append(row)
     state["published"] = sorted(state["published"], key=lambda item: item["target_date"])[-400:]
@@ -830,6 +866,7 @@ def main() -> int:
         "Chess Bits video published successfully",
         f"Verified public upload for target date {target.isoformat()}.\nTitle: {title}\nType: {kind}\n"
         f"URL: {row['url']}\nDuration: {qa['duration_seconds']} seconds\nMusic included: {qa['music_included']}\n"
+        f"Start-position thumbnail set: {thumbnail_set}\n"
         "The uploaded video passed move legality and full audio/video decode checks."
     )
     print(f"CHESSBITS_PUBLISHED {json.dumps(row)}", flush=True)
