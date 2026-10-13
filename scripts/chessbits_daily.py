@@ -327,17 +327,27 @@ def find_existing_upload(service, uploads_playlist: str, marker: str):
 
 
 def ensure_public(service, video_id: str) -> dict:
-    """Verify public visibility and give the owner-authorized API one safe chance to fix status."""
+    """Wait for public visibility and successful YouTube processing before declaring success."""
     update_attempted = False
-    for attempt in range(18):
-        response = service.videos().list(part="snippet,status", id=video_id).execute()
+    for attempt in range(90):  # up to 15 minutes; later scheduled runs safely resume by video marker
+        response = service.videos().list(
+            part="snippet,status,processingDetails", id=video_id
+        ).execute()
         items = response.get("items", [])
         if not items:
             raise RuntimeError(f"YouTube did not return uploaded video {video_id}.")
         item = items[0]
         status = item.get("status", {})
-        if status.get("uploadStatus") in ("failed", "rejected", "deleted"):
-            raise RuntimeError(f"YouTube rejected or failed video {video_id}: {status}")
+        processing = item.get("processingDetails", {})
+        processing_status = processing.get("processingStatus")
+        upload_status = status.get("uploadStatus")
+        if upload_status in ("failed", "rejected", "deleted"):
+            reason = status.get("failureReason") or status.get("rejectionReason") or processing.get("processingFailureReason") or status
+            raise RuntimeError(f"YouTube upload/processing failed for video {video_id}: {reason}")
+        if processing_status == "failed":
+            raise RuntimeError(
+                f"YouTube processing failed for video {video_id}: {processing.get('processingFailureReason', 'unknown reason')}"
+            )
         if status.get("privacyStatus") != "public" and not update_attempted:
             update_attempted = True
             try:
@@ -350,12 +360,22 @@ def ensure_public(service, video_id: str) -> dict:
                     "YouTube accepted the upload but would not make it public. Complete Google's YouTube API "
                     "compliance audit and check channel permissions. The video was not deleted."
                 ) from exc
-        if status.get("privacyStatus") == "public" and status.get("uploadStatus") not in ("failed", "rejected", "deleted"):
+        if (
+            status.get("privacyStatus") == "public"
+            and upload_status == "processed"
+            and processing_status == "succeeded"
+        ):
             return item
+        if attempt % 6 == 0:
+            print(
+                f"YOUTUBE_PROCESSING_WAIT video_id={video_id} attempt={attempt + 1}/90 "
+                f"privacy={status.get('privacyStatus')} upload={upload_status} processing={processing_status}",
+                flush=True,
+            )
         time.sleep(10)
     raise RuntimeError(
-        "Upload is present but did not become public within the verification window. "
-        "The workflow will retry without intentionally creating a duplicate."
+        "YouTube has not confirmed both public visibility and successful processing within 15 minutes. "
+        "The daily retry will resume by video marker instead of intentionally uploading a duplicate."
     )
 
 
