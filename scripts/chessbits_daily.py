@@ -144,37 +144,37 @@ OPENINGS = [
         "exercise": "Trace the open and semi-open files on the queenside, then identify which rook can use them first. Next, identify White's most useful central break. This reveals the strategic battle even when neither side has a forcing combination.",
     },
     {
-        "id": "ruy-lopez",
-        "title": "Ruy Lopez: Pressure the Centre Before Attacking",
-        "opening": "the Ruy Lopez",
-        "moves": "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Na5 10. Bc2 c5 11. d4 Qc7",
-        "hook": "The Ruy Lopez is a model of positional opening play. White develops toward the centre and puts pressure on the defender of e5, while both sides prepare to contest the central pawn structure.",
-        "ideas": "The bishop's pressure on the c6-knight influences the e5-pawn, but the strategic point is broader than winning a pawn. White can prepare d4 and build a strong centre; Black can gain queenside space and challenge that centre with ...c5. Each side tries to create a favourable pawn break while keeping the king safe.",
-        "plan": "White should complete development, support d4, and avoid allowing Black to resolve the centre on ideal terms. Black should use the queenside space, contest central squares, and finish development before starting a flank attack. The bishop pair is useful only if its diagonals remain active.",
-        "mistake": "Do not move the same bishop repeatedly without a concrete reason, and do not assume the pin on the knight is permanent. Black can break the pin or challenge the centre; White must be ready to adapt. Opening plans are flexible ideas, not forced scripts.",
-        "exercise": "Before playing d4 or ...c5, count the pieces that support and attack the centre. The side that prepares the break better often obtains the more comfortable middlegame. This is a useful habit in many classical openings.",
+        "id": "blackmar-diemer",
+        "title": "Blackmar-Diemer Gambit: Open Lines and Fast Development",
+        "opening": "the Blackmar-Diemer Gambit",
+        "moves": "1. d4 d5 2. e4 dxe4 3. Nc3 Nf6 4. f3 exf3 5. Nxf3 g6 6. Bc4 Bg7 7. O-O Nc6 8. Qe1 Bg4 9. Bg5 Qd7 10. Qg3",
+        "hook": "The Blackmar-Diemer Gambit trades a central pawn for open lines, rapid development, and attacking chances. White must use the lead in development before Black finishes coordinating the pieces.",
+        "ideas": "White's f-pawn offer opens the f-file and brings a knight into the centre. The bishop on c4 and queen can point toward the kingside, but the attack depends on development and concrete threats. Black's best defence is to return material when useful, complete development, and avoid allowing every white piece to enter with tempo.",
+        "plan": "White should castle, develop the bishops actively, and bring a rook to an open file. Black should challenge the centre, exchange active attacking pieces if possible, and avoid moving the same piece repeatedly while the king remains in the centre.",
+        "mistake": "White should not sacrifice more material automatically once the first pawn has been offered. Black should not attempt to preserve every pawn if doing so costs several tempi. The compensation must be assessed from activity, king safety, and the resulting position.",
+        "exercise": "After the first central exchanges, identify White's most active piece and Black's easiest developing move. Compare the attacking chances with the material count, then decide what White must do before Black completes development."
     },
     {
-        "id": "french-winawer",
-        "title": "French Winawer: Space, Structure, and Counterplay",
-        "opening": "the French Winawer",
-        "moves": "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5 5. a3 Bxc3+ 6. bxc3 Ne7 7. Nf3 Nbc6 8. Bd3 c4 9. Be2 Qa5 10. Bd2 Bd7 11. O-O O-O 12. Ng5 h6",
-        "hook": "The French Winawer creates an asymmetric pawn structure early. White gains space with e5, while Black attacks the centre and may damage White's pawns in exchange for dynamic counterplay.",
-        "ideas": "The c3-pawn recapture gives White a central pawn duo but leaves a doubled pawn structure. Black's ...c5 challenge is fundamental because it attacks the base of White's centre. White has to use space before Black's counterplay becomes strong, and Black must avoid getting cramped behind the pawn chain.",
-        "plan": "White should develop, castle, and consider attacking the kingside only when the centre is secure. Black should keep pressure on d4 and look for piece activity along the dark squares. The side with less space can often improve by exchanging the right pieces, not by making random pawn moves.",
-        "mistake": "White should not attack on the kingside while the centre is collapsing. Black should not exchange the light-squared bishop without considering the long-term dark-square consequences. Every pawn break changes which side of the board is easier to play.",
-        "exercise": "Identify the base of each pawn chain and the break that attacks it. Then ask whether the pieces are placed behind the pawns that should advance. This helps you form a plan instead of reacting move by move.",
+        "id": "latvian-gambit",
+        "title": "Latvian Gambit: A Sharp Counterattack After 1.e4 e5",
+        "opening": "the Latvian Gambit",
+        "moves": "1. e4 e5 2. Nf3 f5 3. Nxe5 Qf6 4. d4 d6 5. Nc4 fxe4 6. Nc3 Qg6 7. Ne3 Nf6 8. g3",
+        "hook": "The Latvian Gambit is one of the sharpest ways to challenge White's king-knight opening. Black offers a pawn early to open lines and generate activity, but the position demands accurate calculation from both sides.",
+        "ideas": "After ...f5, Black attacks the centre and invites White to take the e-pawn. The queen move to f6 adds pressure, while ...d6 attacks the advanced knight. Black must balance initiative with king safety; White can often gain an advantage by developing calmly and returning material if that neutralizes the attack.",
+        "plan": "White should develop without chasing every pawn and keep an eye on Black's queen and kingside. Black should develop quickly, create forcing threats, and avoid spending too many tempi on speculative queen moves. Both sides must calculate checks, captures, and direct threats before launching an attack.",
+        "mistake": "The main mistake for Black is treating the gambit as automatic compensation. If White consolidates, the missing pawn can matter. White can also go wrong by trying to refute the opening with a single tactical idea instead of completing development.",
+        "exercise": "Replay the first six moves and pause after the queen reaches f6. Count the developed pieces and list each side's forcing moves. Decide whether White should attack the queen, improve a piece, or secure the centre."
     },
     {
-        "id": "alapin-sicilian",
-        "title": "Alapin Sicilian: Challenge the Sicilian Before It Settles",
-        "opening": "the Alapin Sicilian",
-        "moves": "1. e4 c5 2. c3 Nf6 3. e5 Nd5 4. d4 cxd4 5. Nf3 d6 6. cxd4 Nc6 7. Bc4 Nb6 8. Bb3 dxe5 9. Nxe5 Nxe5 10. dxe5 Qxd1+ 11. Kxd1",
-        "hook": "The Alapin is a direct response to the Sicilian. White uses c3 to support a central d4 push and aims to build a broad centre without entering the most theoretical open-Sicilian positions.",
-        "ideas": "Black's knight pressure on e4 and d5 is important, and White must calculate central exchanges carefully. Once pawns are exchanged, the position can become more open and the value of development rises. A quiet-looking recapture can change the pawn structure and determine which side has targets.",
-        "plan": "White should develop rapidly and use central space when it is supported. Black should challenge the centre with timely pawn breaks and use active pieces to make White's central pawns vulnerable. After queens come off, both sides should reassess king activity and minor-piece placement rather than continuing with an automatic attack.",
-        "mistake": "White can overextend the centre without enough pieces behind it. Black can allow White to establish space and then struggle to find a break. Before trading pawns, check which file opens and whether the resulting endgame favours your pieces.",
-        "exercise": "Replay the early central exchanges and note how the d-pawn changes roles. Then list the best square for each knight. The exercise is to find a move that improves a piece while also challenging the centre.",
+        "id": "albin-countergambit",
+        "title": "Albin Countergambit: Challenge the Queen's Pawn Centre",
+        "opening": "the Albin Countergambit",
+        "moves": "1. d4 d5 2. c4 e5 3. dxe5 d4 4. Nf3 Nc6 5. g3 Be6 6. Nbd2 Qd7 7. Bg2 O-O-O 8. O-O h5 9. Ng5 Bf5 10. Nde4 h4",
+        "hook": "The Albin Countergambit is a direct challenge to the Queen's Gambit. Black gives up a pawn to push a dangerous advanced pawn into White's position and create tactical opportunities.",
+        "ideas": "The early ...e5 offer aims to open lines and establish the d-pawn on d4. White can try to blockade that pawn and develop around it, while Black seeks active pieces and pressure before White consolidates. The advanced pawn is useful only if it is supported by piece activity.",
+        "plan": "Black should support the advanced pawn, finish development, and use the open diagonals. White should challenge the pawn when the pieces are ready, keep the king safe, and avoid allowing a central pawn to cramp the position indefinitely.",
+        "mistake": "Black should not push the passed pawn without bringing pieces into play. White should not waste tempi chasing it if a stable blockade is available. A sound plan should improve development as well as address the pawn structure.",
+        "exercise": "Look at the advanced d-pawn and identify which white pieces can blockade it. Then find Black's most useful developing move. Compare a direct pawn push with a move that increases support behind the pawn."
     },
     {
         "id": "budapest-gambit",
@@ -188,26 +188,26 @@ OPENINGS = [
         "exercise": "After the early exchanges, evaluate whether Black still has active threats or whether White has consolidated. Choose one move for each side that improves the least active piece. That is the practical decision that often matters more than memorizing the gambit name.",
     },
     {
-        "id": "queens-gambit-declined",
-        "title": "Queen's Gambit Declined: Build Pressure on the Centre",
-        "opening": "the Queen's Gambit Declined",
-        "moves": "1. d4 d5 2. c4 e6 3. Nc3 Nf6 4. Bg5 Be7 5. e3 O-O 6. Nf3 h6 7. Bh4 b6 8. cxd5 Nxd5 9. Bxe7 Qxe7 10. Nxd5 exd5 11. Rc1 Be6 12. Qa4",
-        "hook": "The Queen's Gambit Declined is a lesson in central tension. White challenges the d5-pawn with c4, while Black supports it with e6 and aims for a sturdy structure.",
-        "ideas": "Neither side needs to resolve the centre immediately. White can add pressure and develop pieces before deciding whether to exchange on d5; Black can maintain the pawn chain or seek a freeing break. The bishop pair and piece activity become important once the centre opens.",
-        "plan": "White should complete development, place a rook on the c-file, and use the queen to increase pressure only when it cannot be chased with tempo. Black should seek ...c5 or ...e5 at the right moment and avoid remaining cramped. The central pawn structure determines the best squares for the minor pieces.",
-        "mistake": "A common mistake is to trade in the centre without understanding which piece will recapture and which file will open. Another is to keep tension forever and allow the opponent to improve freely. Make each pawn exchange part of a plan.",
-        "exercise": "Before exchanging on d5, identify both recaptures and the resulting pawn structure. Then choose a developing move that keeps the option open. Good opening play often means preserving useful choices until the position tells you which one is best.",
+        "id": "elephant-gambit",
+        "title": "Elephant Gambit: Counterattack in the Centre",
+        "opening": "the Elephant Gambit",
+        "moves": "1. e4 e5 2. Nf3 d5 3. exd5 e4 4. Qe2 Nf6 5. d3 Qxd5 6. dxe4 Nxe4 7. Nbd2 f5 8. g3 Bb4 9. Bg2 O-O 10. O-O",
+        "hook": "The Elephant Gambit challenges White's development from the very first moves. Black offers central material to seize space and force White to solve concrete problems instead of building an unrestricted centre.",
+        "ideas": "Black's ...d5 and ...e4 create immediate tension. The queen recapture on d5 brings material back but also exposes the queen to developing moves. Both sides have to balance central activity with the need to bring minor pieces into the game.",
+        "plan": "Black should complete development, castle when safe, and use central pressure rather than rely on a single early attack. White should develop with tempo, secure the king, and be prepared to return material if it removes Black's initiative.",
+        "mistake": "Black can go wrong by moving the queen repeatedly without creating a lasting threat. White can also lose time by trying to hold every pawn while the centre remains unstable. Calculate the forcing replies before committing to a tactical line.",
+        "exercise": "After the queen exchange of central captures, list which pieces are developed and which king is safer. Find one move that improves a piece while creating a threat, then compare it with a speculative pawn push."
     },
     {
-        "id": "italian-game",
-        "title": "Italian Game: Development First, Attack Second",
-        "opening": "the Italian Game",
-        "moves": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+ 7. Nc3 Nxe4 8. O-O Bxc3 9. d5 Bf6 10. Re1 Ne7 11. Rxe4 d6 12. Bg5 Bxg5 13. Nxg5 O-O",
-        "hook": "The Italian Game provides a natural route to the centre, but the key decisions are not simply about attacking f7. White and Black both look for a safe king, active pieces, and a favourable central break.",
-        "ideas": "White's c3 and d4 challenge the centre directly, while Black must decide whether to exchange central pawns or keep the tension. The bishop on c4 creates pressure but can become a target if White loses tempi. Once the centre opens, tactical details around e4 and the e-file become important.",
-        "plan": "White should develop, castle, and use the e-file when exchanges create a target. Black should contest the centre, complete development, and avoid unnecessary king-side weaknesses. The best attack grows out of a central advantage and well-coordinated pieces.",
-        "mistake": "Do not attack f7 automatically just because the bishop points there. If Black can defend while developing, the attacker may lose time. Also check every central capture before castling, because tactical exchanges can change whether the king is safe.",
-        "exercise": "At each central exchange, write down which piece will recapture and where it will stand afterward. Then ask whether the exchange improves development or creates a target. This makes the Italian Game a practical lesson in timing and coordination.",
+        "id": "staunton-gambit",
+        "title": "Staunton Gambit: Active Play Against the Dutch Defence",
+        "opening": "the Staunton Gambit",
+        "moves": "1. d4 f5 2. e4 fxe4 3. Nc3 Nf6 4. Bg5 d5 5. f3 exf3 6. Qxf3 e6 7. Bd3 Be7 8. Nge2 O-O 9. O-O Nc6 10. Bxf6 Bxf6",
+        "hook": "The Staunton Gambit meets the Dutch Defence with an early central pawn offer. White tries to use open lines and rapid development before Black's kingside structure settles.",
+        "ideas": "White gives up the e-pawn to open the centre and gain active piece placement. The queen and bishops can develop quickly, but White must make the initiative count before Black consolidates. Black should return material when useful and use central control to reduce the attack.",
+        "plan": "White should develop both knights, castle, and look for useful targets in the centre. Black should contest the centre, complete development, and avoid passive moves that allow White to coordinate the queen and bishops with tempo.",
+        "mistake": "White should not assume that an open file guarantees an attack. Black should not defend passively or cling to every pawn if development falls behind. Count attackers and defenders before starting a forcing sequence.",
+        "exercise": "Pause after White's f3 and calculate Black's best capture. Then follow how White's queen replaces the pawn and ask whether the open lines justify the material investment. Repeat the position from Black's side to practise defending against an initiative."
     },
 ]
 
@@ -481,63 +481,76 @@ Thanks for watching Chess Bits. Save this lesson for your next training session,
 
 
 def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str], str]:
-    url = "https://lichess.org/api/puzzle/daily?date=" + target.strftime("%Y%m%d")
-    response = requests.get(url, timeout=(15, 45), headers={"User-Agent": "ChessBitsAutoPublisher/1.0 contact: chess-bits"})
-    response.raise_for_status()
-    data = response.json()
-    puzzle = data.get("puzzle", {})
-    game_data = data.get("game", {})
-    puzzle_id = str(puzzle.get("id", ""))
-    if not puzzle_id or puzzle_id in used_ids:
-        raise RuntimeError(f"Lichess daily puzzle is missing or already used: {puzzle_id or 'no id'}")
-    rating = int(puzzle.get("rating") or 0)
-    if rating < 1700:
-        raise RuntimeError(f"Lichess puzzle rating {rating} is below the 1700 difficulty floor.")
-    game = chess.pgn.read_game(__import__("io").StringIO(game_data.get("pgn", "")))
-    if game is None or game.errors:
-        raise RuntimeError("Lichess puzzle supplied an invalid source PGN.")
-    all_moves = list(game.mainline_moves())
-    initial_ply = int(puzzle.get("initialPly", -1))
-    if initial_ply < 0 or initial_ply > len(all_moves):
-        raise RuntimeError("Lichess puzzle has an invalid starting ply.")
-    board = game.board()
-    for move in all_moves[:initial_ply]:
-        board.push(move)
-    start_fen = board.fen()
-    solutions = puzzle.get("solution") or []
-    if not solutions:
-        raise RuntimeError("Lichess puzzle has no solution.")
-    sans = []
-    for uci in solutions:
-        move = chess.Move.from_uci(uci)
-        if move not in board.legal_moves:
-            raise RuntimeError("Lichess puzzle solution failed legality validation.")
-        sans.append(board.san(move))
-        board.push(move)
-    solution_text = " ".join(f"{i + 1}. {san}" for i, san in enumerate(sans))
-    pgn = (
-        f'[Event "Chess Bits Lichess Puzzle"]\n[Site "Lichess"]\n'
-        f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "*"]\n\n'
-        + " ".join(f"{san}" for san in sans) + " *\n"
-    )
-    # Re-parse the produced PGN independently so a malformed FEN header cannot reach rendering.
-    states, legal_moves, legal_sans, mate = renderer.parse_pgn(pgn, False)
-    if len(legal_moves) != len(solutions) or legal_sans != sans:
-        raise RuntimeError("Puzzle PGN round-trip did not preserve the complete solution.")
-    side = "White" if chess.Board(start_fen).turn == chess.WHITE else "Black"
-    themes = [str(theme) for theme in puzzle.get("themes", [])][:5]
-    script = (
-        f"Welcome to Chess Bits. Here is a tactical puzzle from Lichess, rated {rating}. "
-        f"{side} is to move. Pause the video and calculate forcing moves before you look at the solution. "
-        "Look for checks, captures, and threats, and make sure every reply has been considered. "
-        f"The solution is {', '.join(sans)}. "
-        f"The key tactical themes are {', '.join(themes) if themes else 'piece activity and calculation'}. "
-        "Notice how the forcing continuation limits the opponent's choices. Do not stop calculating after finding the first good move; check the whole sequence and the final position. "
-        + ("The line ends in checkmate." if mate else "The line reaches the puzzle's intended tactical conclusion; compare the final position with the starting position.")
-        + " Replay the line once more, then try to find the first move without hints. Save the puzzle and practise calculating all forcing replies. Follow Chess Bits for more chess tactics and opening ideas."
-    )
-    meta = {"id": puzzle_id, "rating": rating, "themes": themes, "mate": mate}
-    return pgn, meta, sans, script
+    """Select a genuinely new, difficult recent daily puzzle with bounded source fallback."""
+    failures = []
+    for offset in range(0, 15):
+        puzzle_date = target - timedelta(days=offset)
+        url = "https://lichess.org/api/puzzle/daily?date=" + puzzle_date.strftime("%Y%m%d")
+        try:
+            response = requests.get(url, timeout=(15, 45), headers={"User-Agent": "ChessBitsAutoPublisher/1.0"})
+            response.raise_for_status()
+            data = response.json()
+            puzzle = data.get("puzzle", {})
+            game_data = data.get("game", {})
+            puzzle_id = str(puzzle.get("id", ""))
+            if not puzzle_id or puzzle_id in used_ids:
+                failures.append(f"{puzzle_date}:missing-or-used")
+                continue
+            rating = int(puzzle.get("rating") or 0)
+            if rating < 1700:
+                failures.append(f"{puzzle_date}:rating-{rating}")
+                continue
+            game = chess.pgn.read_game(__import__("io").StringIO(game_data.get("pgn", "")))
+            if game is None or game.errors:
+                failures.append(f"{puzzle_date}:invalid-source-pgn")
+                continue
+            all_moves = list(game.mainline_moves())
+            initial_ply = int(puzzle.get("initialPly", -1))
+            if initial_ply < 0 or initial_ply > len(all_moves):
+                failures.append(f"{puzzle_date}:invalid-initial-ply")
+                continue
+            board = game.board()
+            for move in all_moves[:initial_ply]:
+                board.push(move)
+            start_fen = board.fen()
+            solutions = puzzle.get("solution") or []
+            if not solutions:
+                failures.append(f"{puzzle_date}:empty-solution")
+                continue
+            sans = []
+            for uci in solutions:
+                move = chess.Move.from_uci(uci)
+                if move not in board.legal_moves:
+                    raise RuntimeError(f"Lichess puzzle {puzzle_id} contains an illegal solution move.")
+                sans.append(board.san(move))
+                board.push(move)
+            pgn = (
+                f'[Event "Chess Bits Lichess Puzzle"]\n[Site "Lichess"]\n'
+                f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "*"]\n\n'
+                + " ".join(sans) + " *\n"
+            )
+            # Re-parse with python-chess before a source position reaches the renderer.
+            states, legal_moves, legal_sans, mate = renderer.parse_pgn(pgn, False)
+            if len(legal_moves) != len(solutions) or legal_sans != sans:
+                raise RuntimeError("Puzzle PGN round-trip did not preserve the complete solution.")
+            side = "White" if chess.Board(start_fen).turn == chess.WHITE else "Black"
+            themes = [str(theme) for theme in puzzle.get("themes", [])][:5]
+            script = (
+                f"Welcome to Chess Bits. Here is a tactical puzzle from Lichess, rated {rating}. "
+                f"{side} is to move. Pause the video and calculate forcing moves before you look at the solution. "
+                "Look for checks, captures, and threats, and make sure every reply has been considered. "
+                f"The solution is {', '.join(sans)}. "
+                f"The key tactical themes are {', '.join(themes) if themes else 'piece activity and calculation'}. "
+                "Notice how the forcing continuation limits the opponent's choices. Do not stop calculating after finding the first good move; check the whole sequence and the final position. "
+                + ("The line ends in checkmate." if mate else "The line reaches the puzzle's intended tactical conclusion; compare the final position with the starting position.")
+                + " Replay the line once more, then try to find the first move without hints. Save the puzzle and practise calculating all forcing replies. Follow Chess Bits for more chess tactics and opening ideas."
+            )
+            return pgn, {"id": puzzle_id, "rating": rating, "themes": themes, "mate": mate,
+                          "source_date": puzzle_date.isoformat()}, sans, script
+        except requests.RequestException as exc:
+            failures.append(f"{puzzle_date}:{type(exc).__name__}")
+            continue
+    raise RuntimeError("No unused Lichess daily puzzle rated 1700+ found in the last 15 days. " + ", ".join(failures[-15:]))
 
 
 def download_short_music(target: date, out_path: Path) -> tuple[Path, dict]:
