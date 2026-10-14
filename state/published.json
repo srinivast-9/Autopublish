@@ -43,6 +43,28 @@
       "puzzle_rating": 2041,
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-15",
+      "kind": "opening",
+      "topic_id": "evans-gambit",
+      "title": "Evans Gambit: Open Lines Against the Italian Game",
+      "video_id": "BnWO0ke94eI",
+      "url": "https://www.youtube.com/watch?v=BnWO0ke94eI",
+      "published_at": "2026-10-15T03:43:22.692451+05:30",
+      "qa": {
+        "duration_seconds": 215.67,
+        "bytes": 11901923,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 23,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
