@@ -1,3 +1,26 @@
 {
-  "published": []
+  "published": [
+    {
+      "target_date": "2026-10-14",
+      "kind": "opening",
+      "topic_id": "scotch-gambit",
+      "title": "Scotch Gambit: Fast Development and Attacking Ideas",
+      "video_id": "QjCpJa39jUs",
+      "url": "https://www.youtube.com/watch?v=QjCpJa39jUs",
+      "published_at": "2026-10-14T21:31:57.016064+05:30",
+      "qa": {
+        "duration_seconds": 229.08,
+        "bytes": 12691222,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 36,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
+    }
+  ]
 }
