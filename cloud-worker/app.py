@@ -315,7 +315,8 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
     else:
         d.text((x+template.width+55,70),label,font=font(size),fill=white)
         d.text((x+template.width+58,130),"CHESS BITS  •  ANALYSIS",font=font(24),fill=gold)
-    reveal_start=1.0 if short else 1.5
+    # Keep the puzzle's starting position visible during the thinking timer.
+    reveal_start=12.0 if short else 1.5
     reveal_end=max(reveal_start+.2,final_time)
     if t < reveal_start:
         idx=-1; move=None; prog=None; state=states[0]
