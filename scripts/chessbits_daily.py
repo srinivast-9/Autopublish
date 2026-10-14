@@ -247,12 +247,22 @@ def next_kind(state: dict) -> str:
     rows = state.get("published", [])
     if not rows:
         return "opening"
-    latest = max(rows, key=lambda row: row["target_date"])
+    # If an extra upload is published on the same date, use the actual last row,
+    # not the first row returned by max() when target dates tie.
+    latest = max(
+        enumerate(rows),
+        key=lambda pair: (date.fromisoformat(pair[1]["target_date"]), pair[0]),
+    )[1]
     return "puzzle" if latest["kind"] == "opening" else "opening"
 
 
-def marker_for(target: date) -> str:
-    return "CB" + target.strftime("%Y%m%d")
+def marker_for(target: date, kind: str | None = None) -> str:
+    marker = "CB" + target.strftime("%Y%m%d")
+    # Only forced same-day extras need a kind-specific marker. Keep the legacy
+    # date marker for scheduled runs so any accepted upload can still be recovered.
+    if kind == "puzzle":
+        return marker + "P"
+    return marker
 
 
 def pgn_for_opening(entry: dict) -> str:
@@ -392,8 +402,9 @@ def set_start_position_thumbnail(service, video_id: str, thumbnail_path: Path | 
 
 
 def publish_video(service, uploads_playlist: str, video_path: Path, title: str, description: str,
-                  tags: list[str], target: date, short: bool, thumbnail_path: Path | None = None) -> tuple[str, dict, bool]:
-    marker = marker_for(target)
+                  tags: list[str], target: date, short: bool, thumbnail_path: Path | None = None,
+                  marker: str | None = None) -> tuple[str, dict, bool]:
+    marker = marker or marker_for(target)
     existing = find_existing_upload(service, uploads_playlist, marker)
     if existing:
         if existing["upload_status"] in ("failed", "rejected", "deleted"):
@@ -586,8 +597,9 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
             themes = [str(theme) for theme in puzzle.get("themes", [])][:5]
             script = (
                 f"Welcome to Chess Bits. Here is a tactical puzzle from Lichess, rated {rating}. "
-                f"{side} is to move. Pause the video and calculate forcing moves before you look at the solution. "
-                "Look for checks, captures, and threats, and make sure every reply has been considered. "
+                f"{side} is to move. Can you find the strongest continuation? "
+                "Pause and calculate checks, captures, and threats before looking at the answer. "
+                "\\n__PUZZLE_REVEAL__\\n"
                 f"The solution is {', '.join(sans)}. "
                 f"The key tactical themes are {', '.join(themes) if themes else 'piece activity and calculation'}. "
                 "Notice how the forcing continuation limits the opponent's choices. Do not stop calculating after finding the first good move; check the whole sequence and the final position. "
@@ -755,10 +767,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--self-test", action="store_true", help="Validate all curated opening lines without uploading.")
     parser.add_argument("--status-only", action="store_true", help="Print whether a scheduled run is needed.")
+    parser.add_argument("--kind", choices=("opening", "puzzle"), help="Explicit content type for an authorized manual run.")
+    parser.add_argument("--force-today", action="store_true", help="Permit one additional upload for today's date.")
     args = parser.parse_args()
+    if args.force_today and args.kind != "puzzle":
+        parser.error("--force-today is only allowed with --kind puzzle")
 
     state = load_state()
-    target = next_target_date(state)
+    target = today_ist() if args.force_today else next_target_date(state)
     if args.status_only:
         print(json.dumps({"needed": target is not None, "target_date": target.isoformat() if target else None}))
         return 0
@@ -771,7 +787,8 @@ def main() -> int:
         print("SKIP: today's upload is already recorded; nothing is due.", flush=True)
         return 0
 
-    target_marker = marker_for(target)
+    kind = args.kind or next_kind(state)
+    target_marker = marker_for(target, kind) if args.force_today else marker_for(target)
     used_puzzles = {row.get("puzzle_id") for row in state.get("published", []) if row.get("puzzle_id")}
     # Authorize before rendering, so a missing/incorrect credential never wastes a full render.
     service, uploads_playlist = youtube_client()
@@ -798,7 +815,6 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     renderer.load_pieces()
     validate_openings()
-    kind = next_kind(state)
     music_path = None
     music_meta = None
     puzzle_meta = None
@@ -839,7 +855,31 @@ def main() -> int:
 
     voice_path = OUT_DIR / "voiceover.mp3"
     video_path = OUT_DIR / "chess-bits-daily.mp4"
-    asyncio.run(create_voiceover(script, voice_path))
+    if puzzle_meta:
+        marker = "\\n__PUZZLE_REVEAL__\\n"
+        if marker not in script:
+            raise RuntimeError("Puzzle narration is missing its delayed solution-reveal marker.")
+        intro, solution = script.split(marker, 1)
+        intro_path = OUT_DIR / "voiceover_intro.mp3"
+        solution_path = OUT_DIR / "voiceover_solution.mp3"
+        asyncio.run(create_voiceover(intro.strip(), intro_path))
+        asyncio.run(create_voiceover(solution.strip(), solution_path))
+        concat_cmd = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-i", str(intro_path),
+            "-f", "lavfi", "-t", "7", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+            "-i", str(solution_path),
+            "-filter_complex",
+            "[0:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a0];"
+            "[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a1];"
+            "[2:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a2];"
+            "[a0][a1][a2]concat=n=3:v=0:a=1[out]",
+            "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "160k", str(voice_path),
+        ]
+        subprocess.run(concat_cmd, check=True, capture_output=True, timeout=300)
+        print("PUZZLE_THINK_TIMER seconds=7 solution_voiceover_delayed=true", flush=True)
+    else:
+        asyncio.run(create_voiceover(script, voice_path))
     thumbnail_path = OUT_DIR / "start-position.jpg"
     qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path)
     if puzzle_meta:
@@ -847,7 +887,7 @@ def main() -> int:
     else:
         tags = tags + ["ChessBitsOpening", "ChessBitsTopic:" + str(topic_id)]
     video_id, verified, thumbnail_set = publish_video(
-        service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short", thumbnail_path
+        service, uploads_playlist, video_path, title, description, tags, target, mode == "puzzle_short", thumbnail_path, target_marker
     )
     final_status = verified.get("status", {})
     if final_status.get("privacyStatus") != "public":
