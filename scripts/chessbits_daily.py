@@ -578,12 +578,22 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                 failures.append(f"{puzzle_date}:empty-solution")
                 continue
             sans = []
+            invalid_solution = False
             for uci in solutions:
-                move = chess.Move.from_uci(uci)
+                try:
+                    move = chess.Move.from_uci(uci)
+                except ValueError:
+                    invalid_solution = True
+                    break
                 if move not in board.legal_moves:
-                    raise RuntimeError(f"Lichess puzzle {puzzle_id} contains an illegal solution move.")
+                    invalid_solution = True
+                    break
                 sans.append(board.san(move))
                 board.push(move)
+            if invalid_solution:
+                failures.append(f"{puzzle_date}:illegal-solution")
+                # Do not risk publishing a malformed source line; try another unused daily puzzle.
+                continue
             pgn = (
                 f'[Event "Chess Bits Lichess Puzzle"]\n[Site "Lichess"]\n'
                 f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "*"]\n\n'
