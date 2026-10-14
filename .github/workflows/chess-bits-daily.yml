@@ -11,6 +11,12 @@ on:
     # Free automatic recovery attempts if the daily upload has not succeeded.
     - cron: "0 13,15,17,19,21 * * *"
   workflow_dispatch:
+    inputs:
+      force_short_today:
+        description: "Publish an additional puzzle Short for today's India date, even if the daily slot is filled"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -37,6 +43,8 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          # For an extra Short, use the dispatch input or include [publish-short-now] in a workflow-file commit message.
+          FORCE_SHORT_TODAY: ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-short-now]')) || inputs.force_short_today || false }}
         run: |
           python - <<'PY'
           import json, os
@@ -47,8 +55,9 @@ jobs:
           path = Path("state/published.json")
           state = json.loads(path.read_text()) if path.exists() else {"published": []}
           rows = state.get("published", [])
-          target = today if not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
-          needed = target <= today
+          force_short = os.getenv("FORCE_SHORT_TODAY", "").lower() == "true"
+          target = today if force_short or not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
+          needed = force_short or target <= today
           configured = all(os.getenv(key, "").strip() for key in (
               "YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN"
           ))
@@ -56,7 +65,8 @@ jobs:
               out.write(f"needed={'true' if needed else 'false'}\n")
               out.write(f"configured={'true' if configured else 'false'}\n")
               out.write(f"target_date={target.isoformat()}\n")
-          print(f"Upload due: {needed}; target date: {target.isoformat()}; OAuth configured: {configured}")
+              out.write(f"force_short_today={'true' if force_short else 'false'}\n")
+          print(f"Upload due: {needed}; target date: {target.isoformat()}; force Short: {force_short}; OAuth configured: {configured}")
           PY
 
       - name: Explain the one-time setup blocker
@@ -100,7 +110,14 @@ jobs:
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_APP_PASSWORD: ${{ secrets.SMTP_APP_PASSWORD }}
           CHESSBITS_NOTIFY_EMAIL: ${{ secrets.CHESSBITS_NOTIFY_EMAIL }}
-        run: python scripts/chessbits_daily.py
+          FORCE_SHORT_TODAY: ${{ steps.gate.outputs.force_short_today }}
+        shell: bash
+        run: |
+          if [ "$FORCE_SHORT_TODAY" = "true" ]; then
+            python scripts/chessbits_daily.py --kind puzzle --force-today
+          else
+            python scripts/chessbits_daily.py
+          fi
 
       - name: Save the publish ledger so retries cannot repeat successful videos
         if: always() && steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
