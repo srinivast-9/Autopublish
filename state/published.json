@@ -21,6 +21,28 @@
       "puzzle_rating": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-14",
+      "kind": "puzzle",
+      "topic_id": "lichess-20WMy",
+      "title": "Can You Find This Tactical Shot? | Chess Puzzle",
+      "video_id": "BaZTUE3YLYI",
+      "url": "https://www.youtube.com/watch?v=BaZTUE3YLYI",
+      "published_at": "2026-10-14T22:34:06.977269+05:30",
+      "qa": {
+        "duration_seconds": 64.4,
+        "bytes": 3207824,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": false,
+        "plies": 5,
+        "music_included": true
+      },
+      "puzzle_id": "20WMy",
+      "puzzle_rating": 2041,
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
