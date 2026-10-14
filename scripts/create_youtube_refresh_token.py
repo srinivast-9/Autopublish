@@ -29,7 +29,7 @@ def main() -> None:
     credentials = flow.run_local_server(
         host="localhost",
         port=0,
-        open_browser=True,
+        open_browser=False,
         access_type="offline",
         prompt="consent",
     )
