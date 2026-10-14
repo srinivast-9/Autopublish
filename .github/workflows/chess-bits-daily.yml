@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/chess-bits-daily.yml"
+      - "scripts/chessbits_daily.py"
+      - "cloud-worker/app.py"
   schedule:
     # Primary publication attempt at 5:00 PM IST.
     - cron: "30 11 * * *"
