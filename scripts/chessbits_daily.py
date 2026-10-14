@@ -566,11 +566,13 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                 continue
             all_moves = list(game.mainline_moves())
             initial_ply = int(puzzle.get("initialPly", -1))
-            if initial_ply < 0 or initial_ply > len(all_moves):
+            # Lichess initialPly is the zero-based index of the last game move
+            # before the puzzle position, so include that move when reconstructing FEN.
+            if initial_ply < 0 or initial_ply >= len(all_moves):
                 failures.append(f"{puzzle_date}:invalid-initial-ply")
                 continue
             board = game.board()
-            for move in all_moves[:initial_ply]:
+            for move in all_moves[:initial_ply + 1]:
                 board.push(move)
             start_fen = board.fen()
             solutions = puzzle.get("solution") or []
