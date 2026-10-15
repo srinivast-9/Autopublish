@@ -65,6 +65,28 @@
       "puzzle_rating": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-16",
+      "kind": "puzzle",
+      "topic_id": "lichess-bDo83",
+      "title": "Can You Find This Tactical Shot? | Chess Puzzle",
+      "video_id": "q_ysFrGxwq8",
+      "url": "https://www.youtube.com/watch?v=q_ysFrGxwq8",
+      "published_at": "2026-10-16T03:35:36.155341+05:30",
+      "qa": {
+        "duration_seconds": 66.57,
+        "bytes": 3521064,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": false,
+        "plies": 5,
+        "music_included": true
+      },
+      "puzzle_id": "bDo83",
+      "puzzle_rating": 1701,
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
