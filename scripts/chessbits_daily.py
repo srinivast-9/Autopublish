@@ -15,6 +15,7 @@ import json
 import math
 import os
 import random
+import re
 import smtplib
 import subprocess
 import sys
@@ -582,8 +583,62 @@ async def create_voiceover(text: str, target_path: Path) -> None:
     raise RuntimeError("All free TTS voices failed: " + ", ".join(failures))
 
 
+def speak_square(square: chess.Square) -> str:
+    """Spell a chess square in TTS-friendly language."""
+    return f"{chess.FILE_NAMES[chess.square_file(square)]} {chess.square_rank(square) + 1}"
+
+
+def spoken_san(board: chess.Board, move: chess.Move, san: str) -> str:
+    """Render SAN as natural speech: '+' is 'check', '#' is 'checkmate', never 'plus' or 'hash'."""
+    core = san.rstrip("!?")
+    after = board.copy(stack=False)
+    after.push(move)
+    is_mate = after.is_checkmate()
+    is_check = after.is_check()
+
+    if board.is_castling(move):
+        phrase = "castle kingside" if chess.square_file(move.to_square) == 6 else "castle queenside"
+    else:
+        clean = core.rstrip("+#")
+        match = re.match(r"^(?P<piece>[KQRBN]?)(?P<prefix>[a-h1-8]{0,2})(?P<capture>x?)(?P<dest>[a-h][1-8])(?P<promotion>=[QRBN])?$", clean)
+        if not match:
+            raise RuntimeError(f"Could not convert SAN to speech safely: {san}")
+        piece_code = match.group("piece")
+        piece_names = {"": "pawn", "K": "king", "Q": "queen", "R": "rook", "B": "bishop", "N": "knight"}
+        piece_name = piece_names[piece_code]
+        prefix = match.group("prefix")
+        takes = bool(match.group("capture"))
+        destination = match.group("dest")
+        target = f"{destination[0]} {destination[1]}"
+        if takes:
+            if not piece_code and prefix:
+                phrase = f"pawn from {prefix[0]} takes {target}"
+            elif prefix:
+                phrase = f"{piece_name} from {prefix} takes {target}"
+            else:
+                phrase = f"{piece_name} takes {target}"
+        else:
+            if prefix:
+                phrase = f"{piece_name} from {prefix} to {target}"
+            else:
+                phrase = f"{piece_name} to {target}"
+        promotion = match.group("promotion")
+        if promotion:
+            promo_names = {"Q": "queen", "R": "rook", "B": "bishop", "N": "knight"}
+            phrase += f", promoting to a {promo_names[promotion[1]]}"
+        if board.is_en_passant(move):
+            phrase += " en passant"
+
+    # Derive the spoken check annotation from the actual resulting position, not punctuation alone.
+    if is_mate:
+        phrase += ", checkmate"
+    elif is_check:
+        phrase += ", check"
+    return phrase
+
+
 def move_narration(board: chess.Board, move: chess.Move, san: str) -> str:
-    """Create factual narration for a single legal move; its visual tween is timed to this clip."""
+    """One legal move callout with correctly spoken SAN suffix and short, factual explanation."""
     side = "White" if board.turn == chess.WHITE else "Black"
     piece = board.piece_at(move.from_square)
     if piece is None:
@@ -593,32 +648,34 @@ def move_narration(board: chess.Board, move: chess.Move, san: str) -> str:
         chess.ROOK: "rook", chess.QUEEN: "queen", chess.KING: "king",
     }
     piece_name = piece_names[piece.piece_type]
-    target = f"{chess.FILE_NAMES[chess.square_file(move.to_square)].upper()} {chess.square_rank(move.to_square) + 1}"
-
+    move_callout = spoken_san(board, move, san)
+    after = board.copy(stack=False)
+    after.push(move)
+    if after.is_checkmate():
+        return f"{side} plays {move_callout}. That is checkmate; there is no legal escape."
+    if after.is_check():
+        return f"{side} plays {move_callout}. The king must answer the check."
     if board.is_castling(move):
-        castle_side = "kingside" if chess.square_file(move.to_square) == 6 else "queenside"
-        spoken = f"{side} castles {castle_side}, improving king safety and connecting the rooks."
+        explanation = "This improves king safety and helps connect the rooks."
+    elif board.is_en_passant(move):
+        explanation = "This is an en passant capture; the pawn is removed from the square it passed."
     elif board.is_capture(move):
-        spoken = f"{side}'s {piece_name} captures on {target}. Check the position for a possible recapture before judging the exchange."
+        explanation = "Check whether the capturing piece can be recaptured before evaluating the exchange."
+    elif move.promotion:
+        explanation = "Promotion changes the pawn into a more powerful piece; verify that the new piece is safe."
     elif piece.piece_type == chess.PAWN:
-        if target.replace(" ", "") in ("D4", "E4", "D5", "E5"):
-            spoken = f"{side} advances the pawn to {target}, taking central space and challenging control of key squares."
-        else:
-            spoken = f"{side} advances the pawn to {target}. This changes the pawn structure and can open or restrict lines."
+        explanation = "This pawn move changes the structure and the squares each side can use."
     elif piece.piece_type == chess.KNIGHT:
-        spoken = f"{side} moves the knight to {target}, improving its activity and influence over central squares."
+        explanation = "The knight's new square changes its control of central and tactical squares."
     elif piece.piece_type == chess.BISHOP:
-        spoken = f"{side} moves the bishop to {target}, activating the diagonal and adding pressure to the position."
+        explanation = "The bishop's diagonal and the targets it attacks have changed."
     elif piece.piece_type == chess.ROOK:
-        spoken = f"{side} repositions the rook to {target}, helping coordinate the major pieces."
+        explanation = "The rook is improving its line and coordination with the other pieces."
     elif piece.piece_type == chess.QUEEN:
-        spoken = f"{side} moves the queen to {target}, coordinating with the other pieces and shaping the next phase."
+        explanation = "The queen changes its pressure and coordination with the other pieces."
     else:
-        spoken = f"{side} moves the king to {target}. Keep king safety and the opponent's forcing moves in view."
-
-    if board.gives_check(move):
-        spoken += " The move also gives check, so the king's side must respond immediately."
-    return spoken
+        explanation = "Check king safety and the opponent's forcing replies after the king move."
+    return f"{side} plays {move_callout}. {explanation}"
 
 
 def make_opening_segments(entry: dict, states: list[chess.Board],
