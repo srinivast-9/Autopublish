@@ -304,9 +304,12 @@ def marker_for(target: date, kind: str | None = None) -> str:
 
 
 def pgn_for_opening(entry: dict) -> str:
+    lesson_type = entry.get("lesson_type", "opening")
+    event = "Chess Bits Tactical Lesson" if lesson_type == "tactics" else "Chess Bits Opening Lesson"
+    black = "Tactical demonstration" if lesson_type == "tactics" else entry["opening"]
     return (
-        f'[Event "Chess Bits Opening Lesson"]\n'
-        f'[Site "Chess Bits"]\n[White "Chess Bits"]\n[Black "{entry["opening"]}"]\n'
+        f'[Event "{event}"]\n'
+        f'[Site "Chess Bits"]\n[White "Chess Bits"]\n[Black "{black}"]\n'
         f'[Result "*"]\n[Opening "{entry["opening"]}"]\n\n{entry["moves"]} *\n'
     )
 
@@ -1210,29 +1213,65 @@ def main() -> int:
     music_meta = None
     puzzle_meta = None
     if kind == "opening":
-        # Rotate through curated opening lessons; the PGN is legality-checked before narration or rendering.
-        opening_rows = [row for row in OPENINGS if row["id"] not in {x.get("topic_id") for x in state.get("published", [])}]
-        entry = opening_rows[0] if opening_rows else OPENINGS[len(state.get("published", [])) % len(OPENINGS)]
+        # Alternate opening lessons with a tactics-focused long-form lesson after every two openings.
+        used_topics = {row.get("topic_id") for row in state.get("published", [])}
+        longform_rows = [row for row in state.get("published", []) if row.get("kind") == "opening"]
+        longform_count = len(longform_rows)
+        want_tactics = longform_count >= 2 and longform_count % 3 == 2
+        candidates = [
+            row for row in OPENINGS
+            if row["id"] not in used_topics and (row.get("lesson_type") == "tactics") == want_tactics
+        ]
+        if not candidates:
+            candidates = [row for row in OPENINGS if row["id"] not in used_topics]
+        entry = candidates[0] if candidates else OPENINGS[len(state.get("published", [])) % len(OPENINGS)]
         title = entry["title"]
         pgn = pgn_for_opening(entry)
         states, moves, sans, mate = renderer.parse_pgn(pgn, False)
         opening_entry = entry
         mode = "longform"
         topic_id = entry["id"]
-        description = (
-            f"{title}\n\nA practical chess opening lesson from Chess Bits. Follow the legal sample line, "
-            "learn the strategic ideas, and practise the key decisions. Subscribe for more chess openings, "
-            "gambits, tactics, and practical training.\n\n#Chess #ChessOpening #ChessBits"
-        )
-        tags = ["chess", "chess openings", "chess gambit", "chess strategy", "chess tutorial", "Chess Bits"]
+        if entry.get("lesson_type") == "tactics":
+            description = (
+                f"{title}\\n\\nAn original, move-by-move Chess Bits tactics lesson covering forcing moves, deflection, sacrifice, "
+                "pins, batteries, and practical calculation. This lesson uses original explanations and a legally checked demonstration line.\\n\\n"
+                f"Further study: {entry.get('book_reference', 'Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)')}.\\n\\n"
+                "#Chess #ChessTactics #ChessBits"
+            )
+            tags = ["chess", "chess tactics", "chess combinations", "deflection", "sacrifice", "mating attack", "Chess Bits"]
+        else:
+            description = (
+                f"{title}\\n\\nA practical chess opening lesson from Chess Bits. Follow the legal sample line, "
+                "learn the strategic ideas, and practise the key decisions. Subscribe for more chess openings, "
+                "gambits, tactics, and practical training.\\n\\n#Chess #ChessOpening #ChessBits"
+            )
+            tags = ["chess", "chess openings", "chess gambit", "chess strategy", "chess tutorial", "Chess Bits"]
     else:
-        pgn, puzzle_meta, solution_sans, script = fetch_puzzle(target, used_puzzles)
-        title = f"Can You Find This {('Mate' if puzzle_meta['mate'] else 'Tactical Shot')}? | Chess Puzzle"
+        puzzle_count = sum(1 for row in state.get("published", []) if row.get("kind") == "puzzle")
+        used_signatures = {row.get("puzzle_signature") for row in state.get("published", []) if row.get("puzzle_signature")}
+        tactical_theme_names = {
+            "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
+            "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
+            "hangingPiece", "trappedPiece", "backRankMate", "promotion",
+            "rook battery", "mating attack", "queen sacrifice", "removal of defender",
+        }
+        recent_themes = set()
+        for row in [row for row in state.get("published", []) if row.get("kind") == "puzzle"][-4:]:
+            theme = row.get("puzzle_primary_theme")
+            if theme:
+                recent_themes.add(theme)
+        pgn, puzzle_meta, solution_sans, script = fetch_puzzle(
+            target, used_puzzles, used_signatures, recent_themes, puzzle_count
+        )
+        title = "Can You Find the Forcing Move? | Chess Puzzle"
         mode = "puzzle_short"
-        topic_id = "lichess-" + puzzle_meta["id"]
+        topic_id = "puzzle-" + puzzle_meta["id"]
+        rating_note = f"Difficulty rating: {puzzle_meta['rating']}.\\n" if puzzle_meta.get("rating") is not None else ""
         description = (
-            f"A tactical chess puzzle rated {puzzle_meta['rating']}. Pause before the solution reveal and calculate every reply.\n\n"
-            + "Themes: " + ", ".join(puzzle_meta["themes"]) + "\n\n"
+            "A challenging chess puzzle. Pause before the solution reveal and calculate every reply.\\n"
+            + rating_note
+            + "The solution is revealed only after the thinking interval. Themes: "
+            + ", ".join(puzzle_meta["themes"]) + ".\\n\\n"
         )
         try:
             music_path, music_meta = download_short_music(target, OUT_DIR / "short_music.mp3")
@@ -1257,7 +1296,9 @@ def main() -> int:
     thumbnail_path = OUT_DIR / "start-position.jpg"
     qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path, move_windows)
     if puzzle_meta:
-        tags = tags + ["ChessBitsPuzzle", "LichessPuzzle:" + str(puzzle_meta["id"])]
+        tags = tags + ["ChessBitsPuzzle", "ChessBitsPuzzleId:" + str(puzzle_meta["id"])]
+    elif opening_entry and opening_entry.get("lesson_type") == "tactics":
+        tags = tags + ["ChessBitsTactics", "ChessBitsTopic:" + str(topic_id)]
     else:
         tags = tags + ["ChessBitsOpening", "ChessBitsTopic:" + str(topic_id)]
     video_id, verified, thumbnail_set = publish_video(
@@ -1277,6 +1318,10 @@ def main() -> int:
         "qa": qa,
         "puzzle_id": puzzle_meta["id"] if puzzle_meta else None,
         "puzzle_rating": puzzle_meta["rating"] if puzzle_meta else None,
+        "puzzle_signature": puzzle_meta.get("signature") if puzzle_meta else None,
+        "puzzle_source": puzzle_meta.get("source") if puzzle_meta else None,
+        "puzzle_themes": puzzle_meta.get("themes", []) if puzzle_meta else [],
+        "puzzle_primary_theme": puzzle_meta.get("primary_theme") if puzzle_meta else None,
         "music_track": music_meta["id"] if music_meta else None,
         "start_position_thumbnail_set": thumbnail_set,
     }
