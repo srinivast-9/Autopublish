@@ -53,13 +53,17 @@ jobs:
           from datetime import date, timedelta, datetime
           from pathlib import Path
           from zoneinfo import ZoneInfo
-          today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
+          now = datetime.now(ZoneInfo("Asia/Kolkata"))
+          today = now.date()
           path = Path("state/published.json")
           state = json.loads(path.read_text()) if path.exists() else {"published": []}
           rows = state.get("published", [])
           force_short = os.getenv("FORCE_SHORT_TODAY", "").lower() == "true"
           target = today if force_short or not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
-          needed = force_short or target <= today
+          # A missed earlier date may recover immediately. A new date's normal slot
+          # is not due until 5 PM IST, so overnight retries cannot publish it early.
+          due_by_date = target < today or (target == today and (now.hour, now.minute) >= (17, 0))
+          needed = force_short or due_by_date
           configured = all(os.getenv(key, "").strip() for key in (
               "YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN"
           ))
@@ -68,7 +72,7 @@ jobs:
               out.write(f"configured={'true' if configured else 'false'}\n")
               out.write(f"target_date={target.isoformat()}\n")
               out.write(f"force_short_today={'true' if force_short else 'false'}\n")
-          print(f"Upload due: {needed}; target date: {target.isoformat()}; force Short: {force_short}; OAuth configured: {configured}")
+          print(f"Upload due: {needed}; target date: {target.isoformat()}; India time: {now.strftime('%Y-%m-%d %H:%M')}; force Short: {force_short}; OAuth configured: {configured}")
           PY
 
       - name: Explain the one-time setup blocker
