@@ -760,7 +760,8 @@ def download_short_music(target: date, out_path: Path) -> tuple[Path, dict]:
 
 
 def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Path,
-                 music_path: Path | None, thumbnail_path: Path) -> dict:
+                 music_path: Path | None, thumbnail_path: Path,
+                 move_windows: list[tuple[float, float]] | None = None) -> dict:
     states, moves, sans, mate = renderer.parse_pgn(pgn, False)
     duration = probe_audio(voice_path)
     if mode == "puzzle_short" and duration > 180:
@@ -772,7 +773,7 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
     final_hold = max(2.3 if mate else 1.5, duration * (0.12 if mode == "puzzle_short" else 0.23))
     reveal_end = max(0.5, duration - final_hold)
     # Save a clean initial-position frame for the YouTube thumbnail.
-    thumb_frame = renderer.frame_at(mode, title, states, moves, sans, mate, 0.0, duration, reveal_end)
+    thumb_frame = renderer.frame_at(mode, title, states, moves, sans, mate, 0.0, duration, reveal_end, move_windows)
     thumb_frame.save(thumbnail_path, format="JPEG", quality=94, optimize=True)
     thumb_frame.close()
     if not thumbnail_path.is_file() or thumbnail_path.stat().st_size < 5_000 or thumbnail_path.stat().st_size > 2_000_000:
@@ -805,7 +806,7 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
         process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=err_file)
         try:
             for index in range(total_frames):
-                frame = renderer.frame_at(mode, title, states, moves, sans, mate, index / renderer.FPS, duration, reveal_end)
+                frame = renderer.frame_at(mode, title, states, moves, sans, mate, index / renderer.FPS, duration, reveal_end, move_windows)
                 process.stdin.write(np.asarray(frame, dtype=np.uint8).tobytes())
                 del frame
                 if index % (renderer.FPS * 5) == 0:
@@ -936,8 +937,8 @@ def main() -> int:
         entry = opening_rows[0] if opening_rows else OPENINGS[len(state.get("published", [])) % len(OPENINGS)]
         title = entry["title"]
         pgn = pgn_for_opening(entry)
-        _, moves, sans, mate = renderer.parse_pgn(pgn, False)
-        script = make_opening_script(entry, sans)
+        states, moves, sans, mate = renderer.parse_pgn(pgn, False)
+        opening_entry = entry
         mode = "longform"
         topic_id = entry["id"]
         description = (
@@ -965,8 +966,9 @@ def main() -> int:
             print(f"SHORT_MUSIC_UNAVAILABLE publishing_without_music type={type(music_exc).__name__}", flush=True)
         tags = ["chess", "chess puzzle", "chess tactics", "mate in 2", "chess shorts", "Chess Bits"]
 
-    voice_path = OUT_DIR / "voiceover.mp3"
+    voice_path = OUT_DIR / ("voiceover.mp3" if puzzle_meta else "voiceover.wav")
     video_path = OUT_DIR / "chess-bits-daily.mp4"
+    move_windows = None
     if puzzle_meta:
         marker = "\\n__PUZZLE_REVEAL__\\n"
         if marker not in script:
@@ -991,9 +993,11 @@ def main() -> int:
         subprocess.run(concat_cmd, check=True, capture_output=True, timeout=300)
         print("PUZZLE_THINK_TIMER seconds=7 solution_voiceover_delayed=true", flush=True)
     else:
-        asyncio.run(create_voiceover(script, voice_path))
+        if not opening_entry:
+            raise RuntimeError("Opening metadata is missing for synchronized narration.")
+        move_windows = create_opening_voiceover(opening_entry, states, moves, sans, voice_path)
     thumbnail_path = OUT_DIR / "start-position.jpg"
-    qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path)
+    qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path, move_windows)
     if puzzle_meta:
         tags = tags + ["ChessBitsPuzzle", "LichessPuzzle:" + str(puzzle_meta["id"])]
     else:
