@@ -595,6 +595,10 @@ def spoken_san(board: chess.Board, move: chess.Move, san: str) -> str:
     after.push(move)
     is_mate = after.is_checkmate()
     is_check = after.is_check()
+    if san.endswith("#") != is_mate:
+        raise RuntimeError(f"SAN checkmate marker disagrees with resulting board: {san}")
+    if san.endswith("+") and not is_check:
+        raise RuntimeError(f"SAN check marker disagrees with resulting board: {san}")
 
     if board.is_castling(move):
         phrase = "castle kingside" if chess.square_file(move.to_square) == 6 else "castle queenside"
@@ -610,18 +614,18 @@ def spoken_san(board: chess.Board, move: chess.Move, san: str) -> str:
         takes = bool(match.group("capture"))
         destination = match.group("dest")
         target = f"{destination[0]} {destination[1]}"
-        if takes:
-            if not piece_code and prefix:
-                phrase = f"pawn from {prefix[0]} takes {target}"
-            elif prefix:
-                phrase = f"{piece_name} from {prefix} takes {target}"
-            else:
-                phrase = f"{piece_name} takes {target}"
+        if len(prefix) == 2 and prefix[0] in chess.FILE_NAMES and prefix[1] in "12345678":
+            origin_phrase = f"from {prefix[0]} {prefix[1]}"
+        elif prefix and prefix[0] in chess.FILE_NAMES:
+            origin_phrase = f"from file {prefix[0]}"
+        elif prefix:
+            origin_phrase = f"from rank {prefix}"
         else:
-            if prefix:
-                phrase = f"{piece_name} from {prefix} to {target}"
-            else:
-                phrase = f"{piece_name} to {target}"
+            origin_phrase = ""
+        if takes:
+            phrase = f"{piece_name} {origin_phrase + ' ' if origin_phrase else ''}takes {target}"
+        else:
+            phrase = f"{piece_name} {origin_phrase + ' ' if origin_phrase else ''}to {target}"
         promotion = match.group("promotion")
         if promotion:
             promo_names = {"Q": "queen", "R": "rook", "B": "bishop", "N": "knight"}
