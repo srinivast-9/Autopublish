@@ -6,8 +6,8 @@ The default-branch workflow `.github/workflows/chess-bits-daily.yml` is the one 
 
 1. Alternates between a 16:9 narrated opening lesson and a 9:16 tactical-puzzle Short.
 2. Validates chess notation and puzzle solution moves with python-chess.
-3. Generates narration with the free `edge-tts` package; no paid TTS subscription is used.
-4. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure.
+3. Generates narration with the free `edge-tts` package; no paid TTS subscription is used. Long-form voiceover is split into move-specific narration clips; each piece moves in a quick ~0.45–0.72 second tween when that move is spoken, then the resulting position holds while its explanation finishes.
+4. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure. Puzzle Shorts preserve the start position during the thinking phase and then reveal and narrate one solution move at a time, with each movement aligned to its spoken cue.
 5. Uses background music **only for puzzle Shorts**. Long-form narrated opening videos have no background music. Shorts use a rotating selection of NCS tracks and include the required attribution in the video description.
 6. Uploads through the official YouTube Data API, verifies that the intended Chess Bits channel owns the video and that the upload is public, commits the ledger, and emails the result if SMTP is configured.
 7. Retries automatically through scheduled recovery runs. A confirmed public upload is not re-uploaded just because the state commit or email step failed.
