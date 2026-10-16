@@ -576,28 +576,40 @@ def make_opening_segments(entry: dict, states: list[chess.Board],
     return [intro, *move_segments, outro]
 
 
-def create_opening_voiceover(entry: dict, states: list[chess.Board],
-                             moves: list[chess.Move], sans: list[str],
-                             voice_path: Path) -> list[tuple[float, float]]:
-    """Build narration in clips and align each short piece animation to its own move callout."""
-    segment_dir = OUT_DIR / "opening_voice_segments"
+def create_segmented_voiceover(segments: list[str | None], voice_path: Path,
+                               segment_dir_name: str, move_start_segment: int,
+                               move_count: int) -> list[tuple[float, float]]:
+    """Synthesize narration clips, concatenate them losslessly, and return one animation window per move.
+
+    A None segment inserts seven seconds of silence, used as the puzzle think timer.
+    Move tweens are about 0.7 seconds long; the resulting board position holds while
+    that move's explanation finishes.
+    """
+    segment_dir = OUT_DIR / segment_dir_name
     segment_dir.mkdir(parents=True, exist_ok=True)
-    segments = make_opening_segments(entry, states, moves, sans)
     wav_paths: list[Path] = []
     durations: list[float] = []
 
     for index, text in enumerate(segments):
-        mp3_path = segment_dir / f"segment_{index:03d}.mp3"
         wav_path = segment_dir / f"segment_{index:03d}.wav"
-        asyncio.run(create_voiceover(text, mp3_path))
-        run_checked([
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(mp3_path),
-            "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(wav_path),
-        ], 180)
-        duration = probe_audio(wav_path)
+        if text is None:
+            run_checked([
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+                "-t", "7.0", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(wav_path),
+            ], 90)
+        else:
+            mp3_path = segment_dir / f"segment_{index:03d}.mp3"
+            asyncio.run(create_voiceover(text.strip(), mp3_path))
+            run_checked([
+                "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(mp3_path),
+                "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(wav_path),
+            ], 180)
+        durations.append(probe_audio(wav_path))
         wav_paths.append(wav_path)
-        durations.append(duration)
 
+    if move_start_segment < 1 or move_start_segment + move_count > len(segments) - 1:
+        raise RuntimeError("Narration segment indices do not leave an intro and outro around every move.")
     concat_list = segment_dir / "concat.txt"
     concat_list.write_text(
         "\n".join(f"file '{path.resolve().as_posix()}'" for path in wav_paths) + "\n",
@@ -615,29 +627,71 @@ def create_opening_voiceover(entry: dict, states: list[chess.Board],
         )
 
     move_windows: list[tuple[float, float]] = []
-    cursor = durations[0]  # introductory strategy narration holds the starting position
-    for index, move_duration in enumerate(durations[1:-1]):
-        # The move narration begins with the mover/action; a short tween runs early,
-        # then the new position stays still while the rest of the explanation is spoken.
+    cursor = sum(durations[:move_start_segment])
+    for offset in range(move_count):
+        move_duration = durations[move_start_segment + offset]
+        # Begin almost immediately after the spoken move starts, animate quickly,
+        # then hold the new position while the move's explanation continues.
         start = cursor + min(0.22, move_duration * 0.08)
         animation = min(0.72, max(0.45, move_duration * 0.24))
         animation = min(animation, max(0.35, move_duration - 0.25))
         end = min(cursor + move_duration - 0.05, start + animation)
         if end <= start:
-            raise RuntimeError(f"Invalid animation window for move {index + 1}.")
+            raise RuntimeError(f"Invalid animation window for move {offset + 1}.")
         move_windows.append((round(start, 4), round(end, 4)))
         cursor += move_duration
 
-    if len(move_windows) != len(moves):
+    if len(move_windows) != move_count:
         raise RuntimeError("Narration timeline does not contain exactly one window per legal move.")
     if any(move_windows[i][1] > move_windows[i + 1][0] for i in range(len(move_windows) - 1)):
         raise RuntimeError("Narration move windows overlap.")
+    if move_windows and move_windows[-1][1] >= combined_duration:
+        raise RuntimeError("Last move animation extends past the finished voiceover.")
     print(
-        f"MOVE_TIMELINE_READY moves={len(move_windows)} duration={combined_duration:.2f}s "
+        f"MOVE_TIMELINE_READY type={segment_dir_name} moves={len(move_windows)} duration={combined_duration:.2f}s "
         f"average_animation={sum(end-start for start, end in move_windows)/len(move_windows):.2f}s",
         flush=True,
     )
     return move_windows
+
+
+def create_opening_voiceover(entry: dict, states: list[chess.Board],
+                             moves: list[chess.Move], sans: list[str],
+                             voice_path: Path) -> list[tuple[float, float]]:
+    """Narrate a move while its piece moves, then hold the board during the explanation."""
+    segments = make_opening_segments(entry, states, moves, sans)
+    return create_segmented_voiceover(
+        segments, voice_path, "opening_voice_segments",
+        move_start_segment=1, move_count=len(moves),
+    )
+
+
+def create_puzzle_voiceover(script: str, pgn: str, puzzle_meta: dict,
+                            voice_path: Path) -> list[tuple[float, float]]:
+    """Hold the puzzle for the full think interval, then narrate and animate each solution move."""
+    marker = "\\n__PUZZLE_REVEAL__\\n"
+    if marker not in script:
+        raise RuntimeError("Puzzle narration is missing its delayed solution-reveal marker.")
+    intro, _legacy_solution = script.split(marker, 1)
+    states, moves, sans, mate = renderer.parse_pgn(pgn, False)
+    move_segments = [
+        move_narration(states[index], move, sans[index])
+        for index, move in enumerate(moves)
+    ]
+    themes = ", ".join(puzzle_meta.get("themes") or []) or "calculation and piece activity"
+    outro = (
+        f"The tactical themes are {themes}. Follow the full sequence and look at the final position. "
+        + ("The line ends in checkmate. " if mate else "The line completes the intended tactical idea. ")
+        + "Before moving, calculate every forcing reply and check whether the opponent has a recapture. "
+        "Save this puzzle and try solving it again without hints. Follow Chess Bits for more tactics and opening lessons."
+    )
+    # None inserts seven seconds of silence after the introduction. No solution move is narrated
+    # or animated during that interval.
+    segments: list[str | None] = [intro.strip(), None, *move_segments, outro]
+    return create_segmented_voiceover(
+        segments, voice_path, "puzzle_voice_segments",
+        move_start_segment=2, move_count=len(moves),
+    )
 
 
 def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str], str]:
