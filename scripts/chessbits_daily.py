@@ -885,10 +885,11 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
         raise RuntimeError(f"Curated tactical puzzle {template['id']} does not end in verified checkmate.")
     signature = puzzle_signature(start_fen, uci_moves)
     position_signature = puzzle_position_signature(start_fen)
+    result = "0-1" if board.turn == chess.WHITE else "1-0"
     pgn = (
         f'[Event "Chess Bits Tactical Puzzle"]\n[Site "Chess Bits"]\n'
-        f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "1-0"]\n\n'
-        + " ".join(sans) + " 1-0\n"
+        f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "{result}"]\n\n'
+        + " ".join(sans) + f" {result}\n"
     )
     parsed_states, parsed_moves, parsed_sans, mate = renderer.parse_pgn(pgn, False)
     if len(parsed_moves) != len(remaining) or parsed_sans != sans or not mate:
