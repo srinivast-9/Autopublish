@@ -8,9 +8,9 @@ on:
       - "scripts/chessbits_daily.py"
       - "cloud-worker/app.py"
   schedule:
-    # First attempt at 5:00 PM IST, then retry hourly through the night and into the next day.
-    # The gate allows a new calendar day's normal upload only from 5:00 PM IST onward.
-    - cron: "30 0-6,11-23 * * *"
+    # Check every hour. The gate permits a new day's normal upload only after 5:00 PM IST,
+    # but older missed dates keep retrying hourly until a public upload is verified.
+    - cron: "30 * * * *"
   workflow_dispatch:
     inputs:
       force_short_today:
