@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import math
 import os
@@ -755,10 +756,154 @@ def create_puzzle_voiceover(script: str, pgn: str, puzzle_meta: dict,
     )
 
 
-def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str], str]:
-    """Select a genuinely new, difficult recent daily puzzle with bounded source fallback."""
+CLASSIC_PUZZLE_GAMES = [
+    {
+        "id": "classic-evergreen-combination",
+        "pgn": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. b4 Bxb4 5. c3 Ba5 6. d4 exd4 7. O-O d3 8. Qb3 Qf6 9. e5 Qg6 10. Re1 Nge7 11. Ba3 b5 12. Qxb5 Rb8 13. Qa4 Bb6 14. Nbd2 Bb7 15. Ne4 Qf5 16. Bxd3 Qh5 17. Nf6+ gxf6 18. exf6 Rg8 19. Rad1 Qxf3 20. Rxe7+ Nxe7 21. Qxd7+ Kxd7 22. Bf5+ Ke8 23. Bd7+ Kf8 24. Bxe7#",
+        "start_ply": 32,
+        "themes": ["queen sacrifice", "deflection", "mating attack", "battery"],
+        "primary_theme": "deflection",
+    },
+    {
+        "id": "classic-opera-combination",
+        "pgn": "1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8#",
+        "start_ply": 18,
+        "themes": ["deflection", "removal of defender", "rook battery", "sacrifice"],
+        "primary_theme": "rook battery",
+    },
+    {
+        "id": "classic-immortal-combination",
+        "pgn": "1. e4 e5 2. f4 exf4 3. Bc4 Qh4+ 4. Kf1 b5 5. Bxb5 Nf6 6. Nf3 Qh6 7. d3 Nh5 8. Nh4 Qg5 9. Nf5 c6 10. g4 Nf6 11. Rg1 cxb5 12. h4 Qg6 13. h5 Qg5 14. Qf3 Ng8 15. Bxf4 Qf6 16. Nc3 Bc5 17. Nd5 Qxb2 18. Bd6 Bxg1 19. e5 Qxa1+ 20. Ke2 Na6 21. Nxg7+ Kd8 22. Qf6+ Nxf6 23. Be7#",
+        "start_ply": 32,
+        "themes": ["sacrifice", "deflection", "mating attack"],
+        "primary_theme": "sacrifice",
+    },
+]
+
+
+def puzzle_signature(fen: str, moves_uci: list[str]) -> str:
+    """Stable fingerprint ignoring move counters while retaining side/castling/en-passant state."""
+    position = " ".join(fen.split()[:4])
+    return hashlib.sha256((position + "|" + " ".join(moves_uci)).encode("utf-8")).hexdigest()
+
+
+def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
+    game = chess.pgn.read_game(__import__("io").StringIO(template["pgn"]))
+    if game is None or game.errors:
+        raise RuntimeError(f"Curated tactical game {template['id']} failed PGN parsing.")
+    all_moves = list(game.mainline_moves())
+    start_ply = int(template["start_ply"])
+    if start_ply < 0 or start_ply >= len(all_moves):
+        raise RuntimeError(f"Curated tactical game {template['id']} has an invalid starting ply.")
+    board = game.board()
+    for move in all_moves[:start_ply]:
+        if move not in board.legal_moves:
+            raise RuntimeError(f"Curated tactical game {template['id']} contains an illegal game move.")
+        board.push(move)
+    start_fen = board.fen()
+    remaining = all_moves[start_ply:]
+    sans = []
+    uci_moves = []
+    for move in remaining:
+        if move not in board.legal_moves:
+            raise RuntimeError(f"Curated tactical game {template['id']} contains an illegal solution move.")
+        sans.append(board.san(move))
+        uci_moves.append(move.uci())
+        board.push(move)
+    if not board.is_checkmate():
+        raise RuntimeError(f"Curated tactical puzzle {template['id']} does not end in verified checkmate.")
+    signature = puzzle_signature(start_fen, uci_moves)
+    pgn = (
+        f'[Event "Chess Bits Tactical Puzzle"]\n[Site "Chess Bits"]\n'
+        f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "1-0"]\n\n'
+        + " ".join(sans) + " 1-0\n"
+    )
+    parsed_states, parsed_moves, parsed_sans, mate = renderer.parse_pgn(pgn, False)
+    if len(parsed_moves) != len(remaining) or parsed_sans != sans or not mate:
+        raise RuntimeError(f"Curated tactical puzzle {template['id']} failed round-trip and mate verification.")
+    side = "White" if chess.Board(start_fen).turn == chess.WHITE else "Black"
+    themes = list(template["themes"])
+    script = (
+        f"Here is a challenging chess puzzle. {side} is to move. "
+        "Can you find the forcing continuation? Calculate checks, captures, and threats, and make sure you consider the opponent's strongest replies. "
+        "\\n__PUZZLE_REVEAL__\\n"
+        f"The solution is {', '.join(sans)}. "
+        f"The key tactical ideas are {', '.join(themes)}. "
+        "Follow the line to its verified final position and look at how the threats combine. "
+        "Replay the sequence and try to solve it again without hints. Follow Chess Bits for more challenging chess puzzles."
+    )
+    return pgn, {
+        "id": template["id"],
+        "rating": None,
+        "themes": themes,
+        "primary_theme": template["primary_theme"],
+        "mate": True,
+        "source": "curated_classic_game",
+        "signature": signature,
+        "source_date": None,
+    }, sans, script
+
+
+def validate_classic_puzzle_bank() -> None:
+    seen_ids: set[str] = set()
+    seen_signatures: set[str] = set()
+    for template in CLASSIC_PUZZLE_GAMES:
+        if template["id"] in seen_ids:
+            raise RuntimeError(f"Duplicate curated puzzle ID: {template['id']}")
+        pgn, meta, sans, script = build_classic_puzzle(template)
+        if meta["signature"] in seen_signatures:
+            raise RuntimeError("Two curated puzzles have the same position/solution fingerprint.")
+        if len(sans) < 6 or not script.startswith("Here is a challenging chess puzzle."):
+            raise RuntimeError(f"Curated puzzle {template['id']} is too short or has invalid narration.")
+        seen_ids.add(template["id"])
+        seen_signatures.add(meta["signature"])
+
+
+def make_puzzle_script(rating: int | None, side: str, themes: list[str], sans: list[str], mate: bool) -> str:
+    lead = "Here is a challenging chess puzzle."
+    if rating is not None:
+        lead += f" It has a difficulty rating of {rating}."
+    return (
+        f"{lead} {side} is to move. Can you find the forcing continuation? "
+        "Pause and calculate checks, captures, and threats before looking at the answer. "
+        "\\n__PUZZLE_REVEAL__\\n"
+        f"The solution is {', '.join(sans)}. "
+        f"The key tactical ideas are {', '.join(themes) if themes else 'calculation and piece activity'}. "
+        "Notice how the forcing continuation limits the opponent's choices. Check the whole sequence and the final position. "
+        + ("The line ends in checkmate. " if mate else "The line completes the intended tactical idea. ")
+        + "Replay the line once more, then try to find the first move without hints. Save the puzzle and practise calculating all forcing replies. Follow Chess Bits for more challenging chess puzzles."
+    )
+
+
+def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
+                 recent_themes: set[str] | None = None, puzzle_count: int = 0) -> tuple[str, dict, list[str], str]:
+    """Choose from original curated tactical combinations and an open puzzle feed without naming its provider in the video."""
+    recent_themes = recent_themes or set()
+    classic_candidates = []
+    for template in CLASSIC_PUZZLE_GAMES:
+        if template["id"] in used_ids:
+            continue
+        try:
+            candidate = build_classic_puzzle(template)
+        except Exception as exc:
+            print(f"CURATED_PUZZLE_REJECTED id={template['id']} type={type(exc).__name__}", flush=True)
+            continue
+        if candidate[1]["signature"] in used_signatures:
+            continue
+        if candidate[1]["primary_theme"] in recent_themes:
+            continue
+        classic_candidates.append((template, candidate))
+
+    # Alternate source types when a new curated position is available; once those
+    # have been used, continue with fresh, high-difficulty positions from the feed.
+    prefer_classic = bool(classic_candidates) and puzzle_count % 2 == 0
+    if prefer_classic:
+        template, candidate = random.choice(classic_candidates)
+        print(f"PUZZLE_SELECTED pool=curated position={template['id']}", flush=True)
+        return candidate
+
     failures = []
-    for offset in range(0, 15):
+    for offset in range(0, 61):
         puzzle_date = target - timedelta(days=offset)
         url = "https://lichess.org/api/puzzle/daily?date=" + puzzle_date.strftime("%Y%m%d")
         try:
@@ -772,7 +917,7 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                 failures.append(f"{puzzle_date}:missing-or-used")
                 continue
             rating = int(puzzle.get("rating") or 0)
-            if rating < 1700:
+            if rating < 2000:
                 failures.append(f"{puzzle_date}:rating-{rating}")
                 continue
             game = chess.pgn.read_game(__import__("io").StringIO(game_data.get("pgn", "")))
@@ -781,8 +926,7 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                 continue
             all_moves = list(game.mainline_moves())
             initial_ply = int(puzzle.get("initialPly", -1))
-            # Lichess initialPly is the zero-based index of the last game move
-            # before the puzzle position, so include that move when reconstructing FEN.
+            # Include the move that creates the actual puzzle position, as defined by the feed's ply index.
             if initial_ply < 0 or initial_ply >= len(all_moves):
                 failures.append(f"{puzzle_date}:invalid-initial-ply")
                 continue
@@ -791,10 +935,12 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                 board.push(move)
             start_fen = board.fen()
             solutions = puzzle.get("solution") or []
-            if not solutions:
-                failures.append(f"{puzzle_date}:empty-solution")
+            # Skip routine one-move shots; prefer a full forcing line with multiple replies.
+            if len(solutions) < 4:
+                failures.append(f"{puzzle_date}:short-solution")
                 continue
             sans = []
+            uci_moves = []
             invalid_solution = False
             for uci in solutions:
                 try:
@@ -806,39 +952,54 @@ def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str]
                     invalid_solution = True
                     break
                 sans.append(board.san(move))
+                uci_moves.append(move.uci())
                 board.push(move)
             if invalid_solution:
                 failures.append(f"{puzzle_date}:illegal-solution")
-                # Do not risk publishing a malformed source line; try another unused daily puzzle.
                 continue
             pgn = (
-                f'[Event "Chess Bits Lichess Puzzle"]\n[Site "Lichess"]\n'
+                f'[Event "Chess Bits Tactical Puzzle"]\n[Site "Chess Bits"]\n'
                 f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "*"]\n\n'
                 + " ".join(sans) + " *\n"
             )
-            # Re-parse with python-chess before a source position reaches the renderer.
-            states, legal_moves, legal_sans, mate = renderer.parse_pgn(pgn, False)
+            parsed_states, legal_moves, legal_sans, mate = renderer.parse_pgn(pgn, False)
             if len(legal_moves) != len(solutions) or legal_sans != sans:
-                raise RuntimeError("Puzzle PGN round-trip did not preserve the complete solution.")
+                failures.append(f"{puzzle_date}:round-trip-failed")
+                continue
+            signature = puzzle_signature(start_fen, uci_moves)
+            if signature in used_signatures:
+                failures.append(f"{puzzle_date}:position-already-used")
+                continue
+            themes = [str(theme) for theme in puzzle.get("themes", []) if str(theme).lower() not in {"middlegame", "endgame", "short", "long"}][:5]
+            primary = next((theme for theme in themes if theme in {
+                "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
+                "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
+                "hangingPiece", "trappedPiece", "backRankMate", "promotion",
+            }), None)
+            if primary and primary in recent_themes:
+                failures.append(f"{puzzle_date}:recent-theme-{primary}")
+                continue
             side = "White" if chess.Board(start_fen).turn == chess.WHITE else "Black"
-            themes = [str(theme) for theme in puzzle.get("themes", [])][:5]
-            script = (
-                f"Welcome to Chess Bits. Here is a tactical puzzle from Lichess, rated {rating}. "
-                f"{side} is to move. Can you find the strongest continuation? "
-                "Pause and calculate checks, captures, and threats before looking at the answer. "
-                "\\n__PUZZLE_REVEAL__\\n"
-                f"The solution is {', '.join(sans)}. "
-                f"The key tactical themes are {', '.join(themes) if themes else 'piece activity and calculation'}. "
-                "Notice how the forcing continuation limits the opponent's choices. Do not stop calculating after finding the first good move; check the whole sequence and the final position. "
-                + ("The line ends in checkmate." if mate else "The line reaches the puzzle's intended tactical conclusion; compare the final position with the starting position.")
-                + " Replay the line once more, then try to find the first move without hints. Save the puzzle and practise calculating all forcing replies. Follow Chess Bits for more chess tactics and opening ideas."
-            )
-            return pgn, {"id": puzzle_id, "rating": rating, "themes": themes, "mate": mate,
-                          "source_date": puzzle_date.isoformat()}, sans, script
+            script = make_puzzle_script(rating, side, themes, sans, mate)
+            return pgn, {
+                "id": puzzle_id,
+                "rating": rating,
+                "themes": themes,
+                "primary_theme": primary,
+                "mate": mate,
+                "source": "open_puzzle_feed",
+                "signature": signature,
+                "source_date": puzzle_date.isoformat(),
+            }, sans, script
         except requests.RequestException as exc:
             failures.append(f"{puzzle_date}:{type(exc).__name__}")
             continue
-    raise RuntimeError("No unused Lichess daily puzzle rated 1700+ found in the last 15 days. " + ", ".join(failures[-15:]))
+
+    if classic_candidates:
+        template, candidate = random.choice(classic_candidates)
+        print(f"PUZZLE_SELECTED fallback=curated position={template['id']}", flush=True)
+        return candidate
+    raise RuntimeError("No unused high-difficulty puzzle passed the novelty, rating, length, and legality checks. " + ", ".join(failures[-20:]))
 
 
 def download_short_music(target: date, out_path: Path) -> tuple[Path, dict]:
@@ -1009,8 +1170,9 @@ def main() -> int:
     if args.self_test:
         renderer.load_pieces()
         validate_openings()
+        validate_classic_puzzle_bank()
         validate_synchronized_animation()
-        print(f"SELF_TEST_PASSED openings={len(OPENINGS)} neo_pieces={len(renderer.PIECES)} narration_sync=true")
+        print(f"SELF_TEST_PASSED lessons={len(OPENINGS)} classic_puzzles={len(CLASSIC_PUZZLE_GAMES)} neo_pieces={len(renderer.PIECES)} narration_sync=true")
         return 0
     if target is None:
         print("SKIP: today's upload is already recorded; nothing is due.", flush=True)
