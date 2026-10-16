@@ -4,11 +4,13 @@ The default-branch workflow `.github/workflows/chess-bits-daily.yml` is the one 
 
 ## What it does
 
-1. Alternates between a 16:9 narrated opening lesson and a 9:16 tactical-puzzle Short.
-2. Validates chess notation and puzzle solution moves with python-chess.
-3. Generates narration with the free `edge-tts` package; no paid TTS subscription is used. Long-form voiceover is split into move-specific narration clips; each piece moves in a quick ~0.45–0.72 second tween when that move is spoken, then the resulting position holds while its explanation finishes.
-4. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure. Puzzle Shorts preserve the start position during the thinking phase and then reveal and narrate one solution move at a time, with each movement aligned to its spoken cue.
-5. Uses background music **only for puzzle Shorts**. Long-form narrated opening videos have no background music. Shorts use a rotating selection of NCS tracks and include the required attribution in the video description.
+1. Alternates between 9:16 tactical-puzzle Shorts and 16:9 long-form lessons. Long-form lessons rotate through openings and gambits, with a tactics-focused lesson after every two long-form opening lessons.
+2. Requires legal move sequences, a complete verified solution and a checked final position. Puzzle selection rotates between a curated bank of classic tactical combinations and a high-difficulty public puzzle feed. Feed puzzles must be rated at least 2000 and contain a multi-ply forcing line.
+3. Tracks used puzzle IDs plus a normalized starting-position/solution fingerprint, and avoids recently used tactical themes when another valid candidate exists. If a position is repeated or malformed, it is rejected rather than published.
+4. Generates narration with the free `edge-tts` package; no paid TTS subscription is used. Long-form voiceover is split into move-specific narration clips; each piece moves in a quick ~0.45–0.72 second tween when that move is spoken, then the resulting position holds while its explanation finishes.
+5. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure. Puzzle Shorts preserve the start position during the thinking phase and then reveal and narrate one solution move at a time, with each movement aligned to its spoken cue.
+6. Uses background music **only for puzzle Shorts**. Long-form videos have no background music. Puzzle source-provider names are omitted from voiceover, on-screen text, title, puzzle description and tags. Where a music track requires attribution, its credit remains in the YouTube description.
+7. Includes original teaching explanations and further-study references to the public-domain book `Technique of Modern Tactics` (1919) in tactics-focused long-form lessons. It does not reproduce book passages.
 6. Uploads through the official YouTube Data API, verifies that the intended Chess Bits channel owns the video and that the upload is public, commits the ledger, and emails the result if SMTP is configured.
 7. Retries automatically through scheduled recovery runs. A confirmed public upload is not re-uploaded just because the state commit or email step failed.
 
@@ -38,6 +40,13 @@ Automatic publishing cannot start until the channel authorizes an unattended upl
 Never put these values in source files, workflow YAML, issues, or chat. If the refresh token is revoked, rerun the local setup and replace the secret.
 
 **Important YouTube restriction:** Google currently restricts uploads from unverified YouTube API projects created after July 28, 2020 to private viewing until the project passes its YouTube API compliance audit. Moving OAuth consent to Production prevents the seven-day Testing-token expiry; it does **not** replace the separate YouTube API compliance audit required for public uploads. See [Google OAuth token lifetime](https://developers.google.com/identity/protocols/oauth2/) and [YouTube API upload policy](https://developers.google.com/youtube/v3/docs/videos/). The workflow checks public visibility and will report failure rather than claiming that a private upload is public. This audit is free but is external to this repository; code cannot bypass it.
+
+## Puzzle and tactics content rules
+
+- A puzzle Short uses neutral challenge wording only: no source-provider mentions in narration, graphics, title, description or tags. Any required music license credit remains in the description only.
+- Prefer hard, forcing multi-move positions (current public-feed filter: rating 2000+, at least four solution plies), verify legality and the final position, track puzzle fingerprints, and reject repeated or malformed lines. Curated classic combinations provide an additional puzzle pool.
+- Long-form lesson selection inserts a tactical-combination lesson after every two long-form opening lessons. Topics include deflection, pins, interference, batteries, sacrifices, removing defenders and mating attacks, with original explanations and a public-domain further-study reference.
+- Animation uses short move tweens tied to each spoken move cue, then holds the resulting board while its explanation continues. The final-position/checkmate label is not allowed to appear before the last move animation completes.
 
 ### 2. Optional email notifications
 
