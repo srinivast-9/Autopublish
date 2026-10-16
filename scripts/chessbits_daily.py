@@ -859,9 +859,13 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
     if game is None or game.errors:
         raise RuntimeError(f"Curated tactical game {template['id']} failed PGN parsing.")
     all_moves = list(game.mainline_moves())
-    start_ply = int(template["start_ply"])
+    # Use only the final five plies of the verified mating line, so Shorts reveal
+    # mate in at most three moves rather than replaying an entire classic game.
+    start_ply = max(int(template["start_ply"]), len(all_moves) - 5)
     if start_ply < 0 or start_ply >= len(all_moves):
         raise RuntimeError(f"Curated tactical game {template['id']} has an invalid starting ply.")
+    if len(all_moves) - start_ply not in (1, 3, 5):
+        raise RuntimeError(f"Curated tactical puzzle {template['id']} is not mate in one, two or three.")
     board = game.board()
     for move in all_moves[:start_ply]:
         if move not in board.legal_moves:
@@ -1005,9 +1009,14 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 board.push(move)
             start_fen = board.fen()
             solutions = puzzle.get("solution") or []
-            # Skip routine one-move shots; prefer a full forcing line with multiple replies.
-            if len(solutions) < 4:
-                failures.append(f"{puzzle_date}:short-solution")
+            # Shorts are checkmate puzzles only: mate in one, two, or three at most.
+            # A solver move plus a reply forms one full move; legal mating lines end on an odd ply.
+            if len(solutions) not in (1, 3, 5):
+                failures.append(f"{puzzle_date}:not-mate-in-1-2-3-ply-count")
+                continue
+            themes_raw = [str(theme) for theme in puzzle.get("themes", [])]
+            if not any(theme.lower() in {"matein1", "matein2", "matein3"} for theme in themes_raw):
+                failures.append(f"{puzzle_date}:not-tagged-mate-in-1-2-3")
                 continue
             sans = []
             uci_moves = []
@@ -1033,8 +1042,8 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 + " ".join(sans) + " *\n"
             )
             parsed_states, legal_moves, legal_sans, mate = renderer.parse_pgn(pgn, False)
-            if len(legal_moves) != len(solutions) or legal_sans != sans:
-                failures.append(f"{puzzle_date}:round-trip-failed")
+            if len(legal_moves) != len(solutions) or legal_sans != sans or not mate:
+                failures.append(f"{puzzle_date}:round-trip-or-checkmate-failed")
                 continue
             signature = puzzle_signature(start_fen, uci_moves)
             position_signature = puzzle_position_signature(start_fen)
@@ -1330,7 +1339,8 @@ def main() -> int:
         pgn, puzzle_meta, solution_sans, script = fetch_puzzle(
             target, used_puzzles, used_signatures, used_position_signatures, recent_themes, puzzle_count
         )
-        title = "Can You Find the Forcing Move? | Chess Puzzle"
+        mate_in = (len(solution_sans) + 1) // 2
+        title = f"Can You Find Mate in {mate_in}? | Chess Puzzle"
         mode = "puzzle_short"
         topic_id = "puzzle-" + puzzle_meta["id"]
         rating_note = f"Difficulty rating: {puzzle_meta['rating']}.\n" if puzzle_meta.get("rating") is not None else ""
@@ -1348,7 +1358,7 @@ def main() -> int:
             music_path, music_meta = None, None
             description += "#chess #puzzle #chesstactics"
             print(f"SHORT_MUSIC_UNAVAILABLE publishing_without_music type={type(music_exc).__name__}", flush=True)
-        tags = ["chess", "chess puzzle", "chess tactics", "mate in 2", "chess shorts", "Chess Bits"]
+        tags = ["chess", "chess puzzle", "checkmate in 1", "checkmate in 2", "checkmate in 3", "chess shorts", "Chess Bits"]
 
     voice_path = OUT_DIR / "voiceover.wav"
     video_path = OUT_DIR / "chess-bits-daily.mp4"
