@@ -1020,31 +1020,11 @@ def main() -> int:
             print(f"SHORT_MUSIC_UNAVAILABLE publishing_without_music type={type(music_exc).__name__}", flush=True)
         tags = ["chess", "chess puzzle", "chess tactics", "mate in 2", "chess shorts", "Chess Bits"]
 
-    voice_path = OUT_DIR / ("voiceover.mp3" if puzzle_meta else "voiceover.wav")
+    voice_path = OUT_DIR / "voiceover.wav"
     video_path = OUT_DIR / "chess-bits-daily.mp4"
     move_windows = None
     if puzzle_meta:
-        marker = "\\n__PUZZLE_REVEAL__\\n"
-        if marker not in script:
-            raise RuntimeError("Puzzle narration is missing its delayed solution-reveal marker.")
-        intro, solution = script.split(marker, 1)
-        intro_path = OUT_DIR / "voiceover_intro.mp3"
-        solution_path = OUT_DIR / "voiceover_solution.mp3"
-        asyncio.run(create_voiceover(intro.strip(), intro_path))
-        asyncio.run(create_voiceover(solution.strip(), solution_path))
-        concat_cmd = [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-            "-i", str(intro_path),
-            "-f", "lavfi", "-t", "7", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
-            "-i", str(solution_path),
-            "-filter_complex",
-            "[0:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a0];"
-            "[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a1];"
-            "[2:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[a2];"
-            "[a0][a1][a2]concat=n=3:v=0:a=1[out]",
-            "-map", "[out]", "-c:a", "libmp3lame", "-b:a", "160k", str(voice_path),
-        ]
-        subprocess.run(concat_cmd, check=True, capture_output=True, timeout=300)
+        move_windows = create_puzzle_voiceover(script, pgn, puzzle_meta, voice_path)
         print("PUZZLE_THINK_TIMER seconds=7 solution_voiceover_delayed=true", flush=True)
     else:
         if not opening_entry:
