@@ -1283,7 +1283,6 @@ def main() -> int:
         state.setdefault("published", []).append(row)
         state["published"] = state["published"][-400:]
         save_state(state)
-        send_email("Chess Bits upload verified", f"Recovered and verified a public upload for {target.isoformat()}:\n{row['title']}\n{row['url']}")
         print(f"CHESSBITS_PUBLISHED {json.dumps(row)}", flush=True)
         return 0
 
@@ -1406,13 +1405,7 @@ def main() -> int:
     state.setdefault("published", []).append(row)
     state["published"] = sorted(state["published"], key=lambda item: item["target_date"])[-400:]
     save_state(state)
-    send_email(
-        "Chess Bits video published successfully",
-        f"Verified public upload for target date {target.isoformat()}.\nTitle: {title}\nType: {kind}\n"
-        f"URL: {row['url']}\nDuration: {qa['duration_seconds']} seconds\nMusic included: {qa['music_included']}\n"
-        f"Start-position thumbnail set: {thumbnail_set}\n"
-        "The uploaded video passed move legality and full audio/video decode checks."
-    )
+    # No success email by design. The workflow sends an email only when publication fails.
     print(f"CHESSBITS_PUBLISHED {json.dumps(row)}", flush=True)
     return 0
 
