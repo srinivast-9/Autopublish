@@ -207,7 +207,46 @@ OPENINGS = [
         "plan": "White should develop both knights, castle, and look for useful targets in the centre. Black should contest the centre, complete development, and avoid passive moves that allow White to coordinate the queen and bishops with tempo.",
         "mistake": "White should not assume that an open file guarantees an attack. Black should not defend passively or cling to every pawn if development falls behind. Count attackers and defenders before starting a forcing sequence.",
         "exercise": "Pause after White's f3 and calculate Black's best capture. Then follow how White's queen replaces the pawn and ask whether the open lines justify the material investment. Repeat the position from Black's side to practise defending against an initiative."
+    },,
+    {
+        "id": "evergreen-sacrifice-battery",
+        "lesson_type": "tactics",
+        "title": "The Evergreen Combination: Sacrifice, Deflection, and a Mating Battery",
+        "opening": "queen sacrifice, deflection, and mating batteries",
+        "moves": "1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. b4 Bxb4 5. c3 Ba5 6. d4 exd4 7. O-O d3 8. Qb3 Qf6 9. e5 Qg6 10. Re1 Nge7 11. Ba3 b5 12. Qxb5 Rb8 13. Qa4 Bb6 14. Nbd2 Bb7 15. Ne4 Qf5 16. Bxd3 Qh5 17. Nf6+ gxf6 18. exf6 Rg8 19. Rad1 Qxf3 20. Rxe7+ Nxe7 21. Qxd7+ Kxd7 22. Bf5+ Ke8 23. Bd7+ Kf8 24. Bxe7#",
+        "hook": "This lesson follows a famous attacking combination in which material is repeatedly offered to keep the initiative. The point is not to memorize a spectacular game: notice how checks, captures, and direct threats keep the defender from reorganizing. A sacrifice is justified only when the follow-up is concrete.",
+        "ideas": "The combination combines deflection with a sequence of forcing moves and a final mating battery. When the king is exposed, a defender can be overloaded: a piece may be required to stop mate, protect the queen, and guard a back-rank square at once. The attacker uses tempo to make these duties impossible to satisfy together. Always verify the opponent's best reply before calling a sacrifice sound.",
+        "plan": "During a forcing attack, calculate checks first, then captures, then direct threats. After every forcing move, ask what the defender is compelled to do and which defensive task has been abandoned. When the king is driven toward the back rank, look for a rook or bishop that can join the attack with tempo.",
+        "mistake": "Do not imitate the sacrifices without checking whether the same forcing replies exist. If the opponent can trade queens, block the checking line, or return material to consolidate, the attack may fail. The final mating pattern works because the pieces cooperate and the defender's replies remain constrained.",
+        "exercise": "Pause before the first forcing check and write down every legal king response. Continue the line one move at a time; after each reply, name the threat that remains. Then go back two moves and see whether the defender could have declined the sacrifice or exchanged an attacker. Further study: Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition).",
+        "book_reference": "Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)"
     },
+    {
+        "id": "opera-deflection-rook-battery",
+        "lesson_type": "tactics",
+        "title": "Deflection and the Rook Battery: A Complete Tactical Combination",
+        "opening": "deflection, sacrifice, and a final rook battery",
+        "moves": "1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8#",
+        "hook": "A successful combination often depends on one defender being pulled away at exactly the right moment. In this classic attacking line, material is given up to open lines and lure pieces away from the squares that matter. Follow the forcing moves rather than judging each exchange in isolation.",
+        "ideas": "The main themes are deflection, removal of defenders, and a rook battery on the open file. A sacrifice is not automatically sound because it looks dramatic: calculate the legal replies and identify which defensive task becomes impossible. The final move works because the pieces coordinate along the back rank and the king has no safe escape.",
+        "plan": "When calculating a forcing line, first list checks and captures. For each possible reply, ask whether it blocks a line, removes a checking piece, or protects the mating square. Look for a defender that is overloaded or can be decoyed away, then confirm that the follow-up remains forcing.",
+        "mistake": "The common error is to stop calculating after the first sacrifice. The defender may have an interposition or countercheck, and a rook battery only works when the line is open and the back rank is controlled. Verify the exact position after every recapture instead of relying on a familiar pattern.",
+        "exercise": "Pause before the first sacrifice and count the defenders around the king. Then follow the sequence until mate, checking every legal response. For further study, consult Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition), and compare how deflection differs from a pin.",
+        "book_reference": "Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)"
+    },
+    {
+        "id": "immortal-game-sacrifice",
+        "lesson_type": "tactics",
+        "title": "A Storm of Sacrifices: Initiative, Deflection, and Checkmate",
+        "opening": "forcing sacrifices and a mating attack",
+        "moves": "1. e4 e5 2. f4 exf4 3. Bc4 Qh4+ 4. Kf1 b5 5. Bxb5 Nf6 6. Nf3 Qh6 7. d3 Nh5 8. Nh4 Qg5 9. Nf5 c6 10. g4 Nf6 11. Rg1 cxb5 12. h4 Qg6 13. h5 Qg5 14. Qf3 Ng8 15. Bxf4 Qf6 16. Nc3 Bc5 17. Nd5 Qxb2 18. Bd6 Bxg1 19. e5 Qxa1+ 20. Ke2 Na6 21. Nxg7+ Kd8 22. Qf6+ Nxf6 23. Be7#",
+        "hook": "This tactical lesson is about initiative: several pieces are offered, but every sacrifice has to gain time or open a decisive line. The aim is to recognize when an exposed king and undeveloped pieces make forcing play more important than material count.",
+        "ideas": "Watch for deflection, discovered threats, and the way checks restrict the king's choices. The attacking side keeps changing the problem the defender must solve; while the queen and rooks appear to be lost, the remaining pieces build a mating net. This is a historical illustration, not a rule that sacrifices are generally correct.",
+        "plan": "In sharp positions, calculate forcing moves before quiet moves. Trace every checking line and identify which defensive piece is being removed or distracted. If a sacrifice opens a file or diagonal, verify that another piece can use that line immediately and that the king cannot escape.",
+        "mistake": "A spectacular attack should not be copied without calculation. If the defender can close the line, exchange queens, or escape the checking net, the same material investment may be unsound. The test is the concrete position after the opponent's best defence.",
+        "exercise": "At each check, pause and list all legal replies. Then track which squares become unavailable and which attacking piece can join next. For further study, Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition) offers a classic framework for studying forcing combinations.",
+        "book_reference": "Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)"
+    }
 ]
 
 def today_ist() -> date:
