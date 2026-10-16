@@ -295,7 +295,8 @@ def draw_piece(board_img: Image.Image, piece: chess.Piece, file: int, rank_from_
 
 
 def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess.Move], sans: list[str], mate: bool,
-             t: float, duration: float, final_time: float) -> Image.Image:
+             t: float, duration: float, final_time: float,
+             move_windows: list[tuple[float, float]] | None = None) -> Image.Image:
     short = mode == "puzzle_short"
     W,H = (1080,1920) if short else (1920,1080)
     square = 920 if short else 790
@@ -315,16 +316,34 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
     else:
         d.text((x+template.width+55,70),label,font=font(size),fill=white)
         d.text((x+template.width+58,130),"CHESS BITS  •  ANALYSIS",font=font(24),fill=gold)
-    # Keep the puzzle's starting position visible during the thinking timer.
+    # Long-form walkthroughs can supply per-move windows derived from the corresponding
+    # narration segment. Otherwise retain a uniform timeline for puzzle Shorts and callers.
     reveal_start=12.0 if short else 1.5
     reveal_end=max(reveal_start+.2,final_time)
-    if t < reveal_start:
+    if move_windows:
+        active = next((i for i, (start, end) in enumerate(move_windows) if start <= t < end), None)
+        if active is not None:
+            idx = active
+            start, end = move_windows[idx]
+            move = moves[idx]
+            prog = min(1.0, max(0.0, (t - start) / max(0.01, end - start)))
+            state = states[idx]
+        else:
+            completed = [i for i, (_start, end) in enumerate(move_windows) if t >= end]
+            idx = completed[-1] if completed else -1
+            move = None
+            prog = None
+            state = states[idx + 1] if idx >= 0 else states[0]
+    elif t < reveal_start:
         idx=-1; move=None; prog=None; state=states[0]
     elif t < reveal_end:
         span=(reveal_end-reveal_start)/len(moves)
         idx=min(len(moves)-1,int((t-reveal_start)/span)); local=((t-reveal_start)-idx*span)/span
-        if local < .28:
-            move=moves[idx]; prog=local/.28; state=states[idx]
+        # Keep each tween snappy (about 0.7 seconds), rather than taking a large
+        # fraction of a long narration segment to move one piece.
+        animation_fraction=min(.28, .72 / max(.72, span))
+        if local < animation_fraction:
+            move=moves[idx]; prog=local/animation_fraction; state=states[idx]
         else:
             move=None; prog=None; state=states[idx+1]
     else:
