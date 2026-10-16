@@ -325,6 +325,9 @@ def validate_openings() -> None:
         states, moves, sans, mate = renderer.parse_pgn(pgn_for_opening(entry), False)
         if len(moves) < 12 or len(sans) != len(moves):
             raise RuntimeError(f"Opening line is too short or invalid: {entry['id']}")
+        # Also verify that each move's SAN can be spoken without misreading + or #.
+        for index, move in enumerate(moves):
+            move_narration(states[index], move, sans[index])
 
 
 def validate_synchronized_animation() -> None:
@@ -973,9 +976,9 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
             continue
         classic_candidates.append((template, candidate))
 
-    # Alternate source types when a new curated position is available; once those
-    # have been used, continue with fresh, high-difficulty positions from the feed.
-    prefer_classic = bool(classic_candidates) and puzzle_count % 2 == 0
+    # Prefer difficult feed puzzles most of the time; use a curated classic
+    # combination about every third Short for source variety, and as fallback.
+    prefer_classic = bool(classic_candidates) and puzzle_count % 3 == 0
     if prefer_classic:
         template, candidate = random.choice(classic_candidates)
         print(f"PUZZLE_SELECTED pool=curated position={template['id']}", flush=True)
