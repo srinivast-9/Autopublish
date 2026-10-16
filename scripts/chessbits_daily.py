@@ -247,13 +247,11 @@ def next_kind(state: dict) -> str:
     rows = state.get("published", [])
     if not rows:
         return "opening"
-    # If an extra upload is published on the same date, use the actual last row,
-    # not the first row returned by max() when target dates tie.
-    latest = max(
-        enumerate(rows),
-        key=lambda pair: (date.fromisoformat(pair[1]["target_date"]), pair[0]),
-    )[1]
-    return "puzzle" if latest["kind"] == "opening" else "opening"
+    # Assign content type by calendar day, not by the last individual upload.
+    # A same-day extra Short or recovery must not shift tomorrow's alternation.
+    latest_date = max(date.fromisoformat(row["target_date"]) for row in rows)
+    primary = next(row for row in rows if date.fromisoformat(row["target_date"]) == latest_date)
+    return "puzzle" if primary["kind"] == "opening" else "opening"
 
 
 def marker_for(target: date, kind: str | None = None) -> str:
