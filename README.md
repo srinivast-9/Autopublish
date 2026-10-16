@@ -1,18 +1,18 @@
 # Chess Bits — free daily publisher
 
-The default-branch workflow `.github/workflows/chess-bits-daily.yml` is the one publishing path. It runs at **5:00 PM India time**, then makes automatic recovery attempts later the same evening and overnight. A committed ledger and per-video marker prevent a retry from intentionally uploading a second copy of a successful video. Oldest missed dates are caught up first.
+The default-branch workflow `.github/workflows/chess-bits-daily.yml` is the single publishing path. It tries at **5:00 PM India time**, then retries **hourly** if publication has not succeeded. A committed ledger and per-video marker prevent a retry from intentionally uploading a second copy of a successful video. Oldest missed dates are caught up first.
 
 ## What it does
 
 1. Alternates between 9:16 tactical-puzzle Shorts and 16:9 long-form lessons. Long-form lessons rotate through openings and gambits, with a tactics-focused lesson after every two long-form opening lessons.
-2. Requires legal move sequences, a complete verified solution and a checked final position. Puzzle selection rotates between a curated bank of classic tactical combinations and a high-difficulty public puzzle feed. Feed puzzles must be rated at least 2000 and contain a multi-ply forcing line.
+2. Requires legal moves, a complete verified solution and a checked final position. Puzzle Shorts are checkmate-only: mate in one, mate in two, or mate in three (at most five plies), with only one selected solution line discussed.
 3. Tracks used puzzle IDs, a normalized starting-position fingerprint and a position-plus-solution fingerprint. This rejects a repeated board position even if a source lists a different solution, and avoids recently used tactical themes when another valid candidate exists.
 4. Generates narration with the free `edge-tts` package; no paid TTS subscription is used. Long-form voiceover is split into move-specific narration clips; each piece moves in a quick ~0.45–0.72 second tween when that move is spoken, then the resulting position holds while its explanation finishes.
 5. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure. Puzzle Shorts preserve the start position during the thinking phase and then reveal and narrate one solution move at a time, with each movement aligned to its spoken cue.
 6. Uses background music **only for puzzle Shorts**. Long-form videos have no background music. Puzzle source-provider names are omitted from voiceover, on-screen text, title, puzzle description and tags. Where a music track requires attribution, its credit remains in the YouTube description.
 7. Includes original teaching explanations and further-study references to the public-domain book `Technique of Modern Tactics` (1919) in tactics-focused long-form lessons. It does not reproduce book passages.
-6. Uploads through the official YouTube Data API, verifies that the intended Chess Bits channel owns the video and that the upload is public, commits the ledger, and emails the result if SMTP is configured.
-7. Retries automatically through scheduled recovery runs. A confirmed public upload is not re-uploaded just because the state commit or email step failed.
+6. Uploads through the official YouTube Data API, verifies the intended Chess Bits channel and public visibility, and commits the ledger. Success emails are disabled; the workflow emails only when a due upload fails, provided SMTP secrets are configured.
+7. Retries hourly after failure. A confirmed public upload is not re-uploaded just because a state commit or email step failed.
 
 The GitHub repository is public, so standard GitHub-hosted Actions runners are free under GitHub's current billing policy. This workflow does not require a paid Render service, Metricool plan, or subscription-based extension. The legacy Render worker branch is not used by this workflow.
 
@@ -44,13 +44,13 @@ Never put these values in source files, workflow YAML, issues, or chat. If the r
 ## Puzzle and tactics content rules
 
 - A puzzle Short uses neutral challenge wording only: no source-provider mentions in narration, graphics, title, description or tags. Any required music license credit remains in the description only.
-- Prefer hard, forcing multi-move positions (current public-feed filter: rating 2000+, at least four solution plies), verify legality and the final position, track puzzle fingerprints, and reject repeated or malformed lines. Curated classic combinations provide an additional puzzle pool.
+- Select checkmate puzzles only: mate in one, two or three, with a legal main line of 1, 3 or 5 plies ending in verified checkmate. Reject longer lines, malformed positions and repeat positions; prefer high-difficulty candidates and avoid recently used tactical themes when valid alternatives exist.
 - Long-form lesson selection inserts a tactical-combination lesson after every two long-form opening lessons. Topics include deflection, pins, interference, batteries, sacrifices, removing defenders and mating attacks, with original explanations and a public-domain further-study reference.
 - Animation uses short move tweens tied to each spoken move cue, then holds the resulting board while its explanation continues. The final-position/checkmate label is not allowed to appear before the last move animation completes.
 
 ### 2. Optional email notifications
 
-To receive one email for each verified upload and an alert after a failed run, add these repository Actions secrets:
+To receive an email **only when a due upload fails**, add these repository Actions secrets:
 
 - `CHESSBITS_NOTIFY_EMAIL`: destination address.
 - `SMTP_HOST`: mail server (for example, `smtp.gmail.com` or `smtp.mail.yahoo.com`).
@@ -58,12 +58,12 @@ To receive one email for each verified upload and an alert after a failed run, a
 - `SMTP_USERNAME`: sender email address.
 - `SMTP_APP_PASSWORD`: an app-specific password from that mail provider.
 
-Email is optional; if these secrets are absent, publishing still runs and run results remain in GitHub Actions. Do not use your normal email account password if the provider supports app-specific passwords.
+These mail secrets are required for email alerts. Without them, publishing still runs, but failures can only be inspected in GitHub Actions. Do not use your normal email account password if the provider supports app-specific passwords.
 
 ## Timing and recovery
 
 - Primary attempt: daily at 5:00 PM IST.
-- Recovery attempts: 6:30 PM, 8:30 PM, 10:30 PM, 12:30 AM and 2:30 AM IST.
+- Recovery attempts: every hour after 5:00 PM IST until 12:00 PM the following day.
 - Overnight retries may catch up an earlier missed calendar date immediately, but do not publish a new day's normal slot before 5:00 PM IST.
 - Only one publisher job can run at a time. Failed dates remain due and are retried; the next successful upload advances the ledger. Same-day additional uploads do not shift the next day's alternating content type.
 - The workflow is also available under **GitHub → Actions → Chess Bits Daily Auto Publisher → Run workflow** for an initial manual test.
