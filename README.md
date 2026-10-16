@@ -55,7 +55,8 @@ Email is optional; if these secrets are absent, publishing still runs and run re
 
 - Primary attempt: daily at 5:00 PM IST.
 - Recovery attempts: 6:30 PM, 8:30 PM, 10:30 PM, 12:30 AM and 2:30 AM IST.
-- Only one publisher job can run at a time. Failed dates remain due and are retried; the next successful upload advances the ledger.
+- Overnight retries may catch up an earlier missed calendar date immediately, but do not publish a new day's normal slot before 5:00 PM IST.
+- Only one publisher job can run at a time. Failed dates remain due and are retried; the next successful upload advances the ledger. Same-day additional uploads do not shift the next day's alternating content type.
 - The workflow is also available under **GitHub → Actions → Chess Bits Daily Auto Publisher → Run workflow** for an initial manual test.
 
 No software system can guarantee delivery during an external provider outage, a revoked credential, quota rejection, or GitHub incident. The intended behavior is automatic retry and a clear alert, not silent success. Do not treat the pipeline as production-ready until the first full run completes and its public YouTube URL is verified.
