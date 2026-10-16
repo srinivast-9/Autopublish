@@ -1051,6 +1051,9 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
     total_frames = max(1, math.ceil(duration * renderer.FPS))
     final_hold = max(2.3 if mate else 1.5, duration * (0.12 if mode == "puzzle_short" else 0.23))
     reveal_end = max(0.5, duration - final_hold)
+    if move_windows:
+        # Never announce the final/checkmate state before the last narrated move has finished.
+        reveal_end = min(duration - 0.25, max(reveal_end, move_windows[-1][1] + 0.25))
     # Save a clean initial-position frame for the YouTube thumbnail.
     thumb_frame = renderer.frame_at(mode, title, states, moves, sans, mate, 0.0, duration, reveal_end, move_windows)
     thumb_frame.save(thumbnail_path, format="JPEG", quality=94, optimize=True)
