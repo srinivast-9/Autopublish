@@ -354,7 +354,14 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
         move_lbl="Study the position" if idx<0 else f"Move {idx+1} of {len(moves)}"
         d.text((W//2,224),move_lbl,font=font(24,False),fill=muted,anchor="mt")
     else:
-        status="CHECKMATE CONFIRMED" if mate and t>=reveal_end else ("FINAL POSITION" if t>=reveal_end else "PLAY THROUGH THE LINE")
+        if mate and t >= reveal_end:
+            status = "CHECKMATE CONFIRMED"
+        elif t >= reveal_end:
+            status = "FINAL POSITION"
+        elif idx >= 0:
+            status = f"MOVE {idx + 1}: {sans[idx]}"
+        else:
+            status = "OPENING IDEAS"
         d.text((x+template.width+58,188),status,font=font(27),fill=white)
         if idx>=0:
             lines=[]
