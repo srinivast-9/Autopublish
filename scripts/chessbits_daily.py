@@ -734,7 +734,7 @@ def create_opening_voiceover(entry: dict, states: list[chess.Board],
 def create_puzzle_voiceover(script: str, pgn: str, puzzle_meta: dict,
                             voice_path: Path) -> list[tuple[float, float]]:
     """Hold the puzzle for the full think interval, then narrate and animate each solution move."""
-    marker = "\\n__PUZZLE_REVEAL__\\n"
+    marker = "\n__PUZZLE_REVEAL__\n"
     if marker not in script:
         raise RuntimeError("Puzzle narration is missing its delayed solution-reveal marker.")
     intro, _legacy_solution = script.split(marker, 1)
@@ -829,7 +829,7 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
     script = (
         f"Here is a challenging chess puzzle. {side} is to move. "
         "Can you find the forcing continuation? Calculate checks, captures, and threats, and make sure you consider the opponent's strongest replies. "
-        "\\n__PUZZLE_REVEAL__\\n"
+        "\n__PUZZLE_REVEAL__\n"
         f"The solution is {', '.join(sans)}. "
         f"The key tactical ideas are {', '.join(themes)}. "
         "Follow the line to its verified final position and look at how the threats combine. "
@@ -869,7 +869,7 @@ def make_puzzle_script(rating: int | None, side: str, themes: list[str], sans: l
     return (
         f"{lead} {side} is to move. Can you find the forcing continuation? "
         "Pause and calculate checks, captures, and threats before looking at the answer. "
-        "\\n__PUZZLE_REVEAL__\\n"
+        "\n__PUZZLE_REVEAL__\n"
         f"The solution is {', '.join(sans)}. "
         f"The key tactical ideas are {', '.join(themes) if themes else 'calculation and piece activity'}. "
         "Notice how the forcing continuation limits the opponent's choices. Check the whole sequence and the final position. "
@@ -1233,17 +1233,17 @@ def main() -> int:
         topic_id = entry["id"]
         if entry.get("lesson_type") == "tactics":
             description = (
-                f"{title}\\n\\nAn original, move-by-move Chess Bits tactics lesson covering forcing moves, deflection, sacrifice, "
-                "pins, batteries, and practical calculation. This lesson uses original explanations and a legally checked demonstration line.\\n\\n"
-                f"Further study: {entry.get('book_reference', 'Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)')}.\\n\\n"
+                f"{title}\n\nAn original, move-by-move Chess Bits tactics lesson covering forcing moves, deflection, sacrifice, "
+                "pins, batteries, and practical calculation. This lesson uses original explanations and a legally checked demonstration line.\n\n"
+                f"Further study: {entry.get('book_reference', 'Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)')}.\n\n"
                 "#Chess #ChessTactics #ChessBits"
             )
             tags = ["chess", "chess tactics", "chess combinations", "deflection", "sacrifice", "mating attack", "Chess Bits"]
         else:
             description = (
-                f"{title}\\n\\nA practical chess opening lesson from Chess Bits. Follow the legal sample line, "
+                f"{title}\n\nA practical chess opening lesson from Chess Bits. Follow the legal sample line, "
                 "learn the strategic ideas, and practise the key decisions. Subscribe for more chess openings, "
-                "gambits, tactics, and practical training.\\n\\n#Chess #ChessOpening #ChessBits"
+                "gambits, tactics, and practical training.\n\n#Chess #ChessOpening #ChessBits"
             )
             tags = ["chess", "chess openings", "chess gambit", "chess strategy", "chess tutorial", "Chess Bits"]
     else:
@@ -1266,12 +1266,12 @@ def main() -> int:
         title = "Can You Find the Forcing Move? | Chess Puzzle"
         mode = "puzzle_short"
         topic_id = "puzzle-" + puzzle_meta["id"]
-        rating_note = f"Difficulty rating: {puzzle_meta['rating']}.\\n" if puzzle_meta.get("rating") is not None else ""
+        rating_note = f"Difficulty rating: {puzzle_meta['rating']}.\n" if puzzle_meta.get("rating") is not None else ""
         description = (
-            "A challenging chess puzzle. Pause before the solution reveal and calculate every reply.\\n"
+            "A challenging chess puzzle. Pause before the solution reveal and calculate every reply.\n"
             + rating_note
             + "The solution is revealed only after the thinking interval. Themes: "
-            + ", ".join(puzzle_meta["themes"]) + ".\\n\\n"
+            + ", ".join(puzzle_meta["themes"]) + ".\n\n"
         )
         try:
             music_path, music_meta = download_short_music(target, OUT_DIR / "short_music.mp3")
