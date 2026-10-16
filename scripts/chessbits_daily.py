@@ -927,8 +927,8 @@ def validate_classic_puzzle_bank() -> None:
         pgn, meta, sans, script = build_classic_puzzle(template)
         if meta["signature"] in seen_signatures:
             raise RuntimeError("Two curated puzzles have the same position/solution fingerprint.")
-        if len(sans) < 6 or not script.startswith("Here is a challenging chess puzzle."):
-            raise RuntimeError(f"Curated puzzle {template['id']} is too short or has invalid narration.")
+        if len(sans) not in (1, 3, 5) or not script.startswith("Here is a challenging chess puzzle."):
+            raise RuntimeError(f"Curated puzzle {template['id']} is not mate in one, two or three or has invalid narration.")
         seen_ids.add(template["id"])
         seen_signatures.add(meta["signature"])
 
