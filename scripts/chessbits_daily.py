@@ -284,6 +284,31 @@ def validate_openings() -> None:
             raise RuntimeError(f"Opening line is too short or invalid: {entry['id']}")
 
 
+def validate_synchronized_animation() -> None:
+    """Smoke-test narration cue construction and both render layouts without uploading."""
+    entry = OPENINGS[0]
+    states, moves, sans, mate = renderer.parse_pgn(pgn_for_opening(entry), False)
+    segments = make_opening_segments(entry, states, moves, sans)
+    if len(segments) != len(moves) + 2 or any(not segment.strip() for segment in segments):
+        raise RuntimeError("Opening narration must include a non-empty intro, one clip per move, and an outro.")
+    if len([move_narration(states[i], move, sans[i]) for i, move in enumerate(moves)]) != len(moves):
+        raise RuntimeError("There must be exactly one spoken move cue for every legal move.")
+    windows = [(0.5 + i * 1.5, 1.2 + i * 1.5) for i in range(len(moves))]
+    duration = windows[-1][1] + 2.0
+    long_frame = renderer.frame_at(
+        "longform", entry["title"], states, moves, sans, mate, 0.8, duration, duration - 1.0, windows
+    )
+    if long_frame.size != (1920, 1080):
+        raise RuntimeError("Long-form synchronized render has the wrong dimensions.")
+    long_frame.close()
+    short_frame = renderer.frame_at(
+        "puzzle_short", "Sync test", states, moves, sans, mate, 0.8, duration, duration - 1.0, windows
+    )
+    if short_frame.size != (1080, 1920):
+        raise RuntimeError("Short-form synchronized render has the wrong dimensions.")
+    short_frame.close()
+
+
 def youtube_client():
     client_id = os.getenv("YOUTUBE_CLIENT_ID", "").strip()
     client_secret = os.getenv("YOUTUBE_CLIENT_SECRET", "").strip()
@@ -526,7 +551,6 @@ def move_narration(board: chess.Board, move: chess.Move, san: str) -> str:
         chess.ROOK: "rook", chess.QUEEN: "queen", chess.KING: "king",
     }
     piece_name = piece_names[piece.piece_type]
-    target = f"{chess.square_file(move.to_square) + 1}"  # overwritten below with algebraic file/rank
     target = f"{chess.FILE_NAMES[chess.square_file(move.to_square)].upper()} {chess.square_rank(move.to_square) + 1}"
 
     if board.is_castling(move):
@@ -948,7 +972,8 @@ def main() -> int:
     if args.self_test:
         renderer.load_pieces()
         validate_openings()
-        print(f"SELF_TEST_PASSED openings={len(OPENINGS)} neo_pieces={len(renderer.PIECES)}")
+        validate_synchronized_animation()
+        print(f"SELF_TEST_PASSED openings={len(OPENINGS)} neo_pieces={len(renderer.PIECES)} narration_sync=true")
         return 0
     if target is None:
         print("SKIP: today's upload is already recorded; nothing is due.", flush=True)
