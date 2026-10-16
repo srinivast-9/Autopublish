@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Free, self-healing daily Chess Bits publisher.
 
-Uses the repository's approved Neo renderer, free Edge TTS, Lichess's public
-daily puzzle endpoint, NCS tracks for puzzle Shorts only, and the official
-YouTube Data API. Long-form voiceovers intentionally have no background music.
+Uses the repository's approved Neo renderer, free Edge TTS, a mixed pool of
+curated classic tactical positions and high-difficulty public puzzle data, free
+credited music for Shorts only, and the official YouTube Data API. Long-form
+voiceovers intentionally have no background music.
 """
 from __future__ import annotations
 
@@ -784,8 +785,14 @@ CLASSIC_PUZZLE_GAMES = [
 ]
 
 
+def puzzle_position_signature(fen: str) -> str:
+    """Position fingerprint ignoring move counters, but keeping side, castling and en-passant state."""
+    position = " ".join(fen.split()[:4])
+    return hashlib.sha256(position.encode("utf-8")).hexdigest()
+
+
 def puzzle_signature(fen: str, moves_uci: list[str]) -> str:
-    """Stable fingerprint ignoring move counters while retaining side/castling/en-passant state."""
+    """Solution fingerprint, paired with a position-only fingerprint to stop alternate-line repeats."""
     position = " ".join(fen.split()[:4])
     return hashlib.sha256((position + "|" + " ".join(moves_uci)).encode("utf-8")).hexdigest()
 
@@ -816,6 +823,7 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
     if not board.is_checkmate():
         raise RuntimeError(f"Curated tactical puzzle {template['id']} does not end in verified checkmate.")
     signature = puzzle_signature(start_fen, uci_moves)
+    position_signature = puzzle_position_signature(start_fen)
     pgn = (
         f'[Event "Chess Bits Tactical Puzzle"]\n[Site "Chess Bits"]\n'
         f'[SetUp "1"]\n[FEN "{start_fen}"]\n[Result "1-0"]\n\n'
@@ -843,6 +851,7 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
         "mate": True,
         "source": "curated_classic_game",
         "signature": signature,
+        "position_signature": position_signature,
         "source_date": None,
     }, sans, script
 
@@ -879,7 +888,8 @@ def make_puzzle_script(rating: int | None, side: str, themes: list[str], sans: l
 
 
 def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
-                 recent_themes: set[str] | None = None, puzzle_count: int = 0) -> tuple[str, dict, list[str], str]:
+                 used_position_signatures: set[str], recent_themes: set[str] | None = None,
+                 puzzle_count: int = 0) -> tuple[str, dict, list[str], str]:
     """Choose from original curated tactical combinations and an open puzzle feed without naming its provider in the video."""
     recent_themes = recent_themes or set()
     classic_candidates = []
@@ -891,7 +901,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
         except Exception as exc:
             print(f"CURATED_PUZZLE_REJECTED id={template['id']} type={type(exc).__name__}", flush=True)
             continue
-        if candidate[1]["signature"] in used_signatures:
+        if candidate[1]["signature"] in used_signatures or candidate[1]["position_signature"] in used_position_signatures:
             continue
         if candidate[1]["primary_theme"] in recent_themes:
             continue
@@ -970,7 +980,8 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 failures.append(f"{puzzle_date}:round-trip-failed")
                 continue
             signature = puzzle_signature(start_fen, uci_moves)
-            if signature in used_signatures:
+            position_signature = puzzle_position_signature(start_fen)
+            if signature in used_signatures or position_signature in used_position_signatures:
                 failures.append(f"{puzzle_date}:position-already-used")
                 continue
             themes = [str(theme) for theme in puzzle.get("themes", []) if str(theme).lower() not in {"middlegame", "endgame", "short", "long"}][:5]
@@ -992,6 +1003,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 "mate": mate,
                 "source": "open_puzzle_feed",
                 "signature": signature,
+                "position_signature": position_signature,
                 "source_date": puzzle_date.isoformat(),
             }, sans, script
         except requests.RequestException as exc:
@@ -1252,19 +1264,14 @@ def main() -> int:
     else:
         puzzle_count = sum(1 for row in state.get("published", []) if row.get("kind") == "puzzle")
         used_signatures = {row.get("puzzle_signature") for row in state.get("published", []) if row.get("puzzle_signature")}
-        tactical_theme_names = {
-            "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
-            "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
-            "hangingPiece", "trappedPiece", "backRankMate", "promotion",
-            "rook battery", "mating attack", "queen sacrifice", "removal of defender",
-        }
+        used_position_signatures = {row.get("puzzle_position_signature") for row in state.get("published", []) if row.get("puzzle_position_signature")}
         recent_themes = set()
         for row in [row for row in state.get("published", []) if row.get("kind") == "puzzle"][-4:]:
             theme = row.get("puzzle_primary_theme")
             if theme:
                 recent_themes.add(theme)
         pgn, puzzle_meta, solution_sans, script = fetch_puzzle(
-            target, used_puzzles, used_signatures, recent_themes, puzzle_count
+            target, used_puzzles, used_signatures, used_position_signatures, recent_themes, puzzle_count
         )
         title = "Can You Find the Forcing Move? | Chess Puzzle"
         mode = "puzzle_short"
@@ -1322,6 +1329,7 @@ def main() -> int:
         "puzzle_id": puzzle_meta["id"] if puzzle_meta else None,
         "puzzle_rating": puzzle_meta["rating"] if puzzle_meta else None,
         "puzzle_signature": puzzle_meta.get("signature") if puzzle_meta else None,
+        "puzzle_position_signature": puzzle_meta.get("position_signature") if puzzle_meta else None,
         "puzzle_source": puzzle_meta.get("source") if puzzle_meta else None,
         "puzzle_themes": puzzle_meta.get("themes", []) if puzzle_meta else [],
         "puzzle_primary_theme": puzzle_meta.get("primary_theme") if puzzle_meta else None,
