@@ -316,9 +316,13 @@ def frame_at(mode: str, title: str, states: list[chess.Board], moves: list[chess
     else:
         d.text((x+template.width+55,70),label,font=font(size),fill=white)
         d.text((x+template.width+58,130),"CHESS BITS  •  ANALYSIS",font=font(24),fill=gold)
-    # Long-form walkthroughs can supply per-move windows derived from the corresponding
-    # narration segment. Otherwise retain a uniform timeline for puzzle Shorts and callers.
-    reveal_start=12.0 if short else 1.5
+    # Long-form walkthroughs and puzzle Shorts can supply per-move windows derived from
+    # the corresponding narration segments. Infer the exact Short reveal moment from its first
+    # move cue so the on-screen timer matches the seven-second silent think interval.
+    if short and move_windows:
+        reveal_start = max(0.0, move_windows[0][0] - 0.23)
+    else:
+        reveal_start = 12.0 if short else 1.5
     reveal_end=max(reveal_start+.2,final_time)
     if move_windows:
         active = next((i for i, (start, end) in enumerate(move_windows) if start <= t < end), None)
