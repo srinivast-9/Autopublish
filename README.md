@@ -11,8 +11,8 @@ The default-branch workflow `.github/workflows/chess-bits-daily.yml` is the sing
 5. Reuses the approved Chess Bits Neo-piece visual renderer, checks MP4 streams, dimensions, duration and a full FFmpeg decode, and refuses to publish on a QA failure. Puzzle Shorts preserve the start position during the thinking phase and then reveal and narrate one solution move at a time, with each movement aligned to its spoken cue.
 6. Uses background music **only for puzzle Shorts**. Long-form videos have no background music. Puzzle source-provider names are omitted from voiceover, on-screen text, title, puzzle description and tags. Where a music track requires attribution, its credit remains in the YouTube description.
 7. Includes original teaching explanations and further-study references to the public-domain book `Technique of Modern Tactics` (1919) in tactics-focused long-form lessons. It does not reproduce book passages.
-6. Uploads through the official YouTube Data API, verifies the intended Chess Bits channel and public visibility, and commits the ledger. Success emails are disabled; the workflow emails only when a due upload fails, provided SMTP secrets are configured.
-7. Retries hourly after failure. A confirmed public upload is not re-uploaded just because a state commit or email step failed.
+8. Uploads through the official YouTube Data API, verifies the intended Chess Bits channel and public visibility, and commits the ledger. Success emails are disabled; the workflow emails only when a due upload fails, provided SMTP secrets are configured.
+9. Retries hourly after failure. A confirmed public upload is not re-uploaded just because a state commit or email step failed.
 
 The GitHub repository is public, so standard GitHub-hosted Actions runners are free under GitHub's current billing policy. This workflow does not require a paid Render service, Metricool plan, or subscription-based extension. The legacy Render worker branch is not used by this workflow.
 
@@ -48,7 +48,7 @@ Never put these values in source files, workflow YAML, issues, or chat. If the r
 - Long-form lesson selection inserts a tactical-combination lesson after every two long-form opening lessons. Topics include deflection, pins, interference, batteries, sacrifices, removing defenders and mating attacks, with original explanations and a public-domain further-study reference.
 - Animation uses short move tweens tied to each spoken move cue, then holds the resulting board while its explanation continues. The final-position/checkmate label is not allowed to appear before the last move animation completes.
 
-### 2. Optional email notifications
+### 2. Failure-only email notifications
 
 To receive an email **only when a due upload fails**, add these repository Actions secrets:
 
