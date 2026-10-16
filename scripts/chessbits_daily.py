@@ -515,29 +515,129 @@ async def create_voiceover(text: str, target_path: Path) -> None:
     raise RuntimeError("All free TTS voices failed: " + ", ".join(failures))
 
 
-def make_opening_script(entry: dict, sans: list[str]) -> str:
-    line = ", ".join(sans[:12])
-    return f"""
-Welcome back to Chess Bits. Today we are studying {entry['opening']}, with a practical example designed to show how the opening plan becomes a middlegame plan. The goal is not to memorise a long string of moves. The goal is to understand what each side is trying to achieve, so you can find useful moves even when your opponent leaves the book.
+def move_narration(board: chess.Board, move: chess.Move, san: str) -> str:
+    """Create factual narration for a single legal move; its visual tween is timed to this clip."""
+    side = "White" if board.turn == chess.WHITE else "Black"
+    piece = board.piece_at(move.from_square)
+    if piece is None:
+        raise RuntimeError("Cannot narrate a move without a moving piece.")
+    piece_names = {
+        chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop",
+        chess.ROOK: "rook", chess.QUEEN: "queen", chess.KING: "king",
+    }
+    piece_name = piece_names[piece.piece_type]
+    target = f"{chess.square_file(move.to_square) + 1}"  # overwritten below with algebraic file/rank
+    target = f"{chess.FILE_NAMES[chess.square_file(move.to_square)].upper()} {chess.square_rank(move.to_square) + 1}"
 
-{entry['hook']}
+    if board.is_castling(move):
+        castle_side = "kingside" if chess.square_file(move.to_square) == 6 else "queenside"
+        spoken = f"{side} castles {castle_side}, improving king safety and connecting the rooks."
+    elif board.is_capture(move):
+        spoken = f"{side}'s {piece_name} captures on {target}. Check the position for a possible recapture before judging the exchange."
+    elif piece.piece_type == chess.PAWN:
+        if target.replace(" ", "") in ("D4", "E4", "D5", "E5"):
+            spoken = f"{side} advances the pawn to {target}, taking central space and challenging control of key squares."
+        else:
+            spoken = f"{side} advances the pawn to {target}. This changes the pawn structure and can open or restrict lines."
+    elif piece.piece_type == chess.KNIGHT:
+        spoken = f"{side} moves the knight to {target}, improving its activity and influence over central squares."
+    elif piece.piece_type == chess.BISHOP:
+        spoken = f"{side} moves the bishop to {target}, activating the diagonal and adding pressure to the position."
+    elif piece.piece_type == chess.ROOK:
+        spoken = f"{side} repositions the rook to {target}, helping coordinate the major pieces."
+    elif piece.piece_type == chess.QUEEN:
+        spoken = f"{side} moves the queen to {target}, coordinating with the other pieces and shaping the next phase."
+    else:
+        spoken = f"{side} moves the king to {target}. Keep king safety and the opponent's forcing moves in view."
 
-Here is the strategic idea to keep in mind. {entry['ideas']}
+    if board.gives_check(move):
+        spoken += " The move also gives check, so the king's side must respond immediately."
+    return spoken
 
-Follow this sample line on the board: {line}. Do not treat the notation as a race to reach a familiar position. After every move, ask which squares have become weaker, which pieces have improved, and which pawn break can change the position. A good opening move normally develops a piece, contests the centre, improves king safety, or creates a concrete threat. When it does none of these things, ask why it is necessary.
 
-For a practical plan, remember this. {entry['plan']}
+def make_opening_segments(entry: dict, states: list[chess.Board],
+                          moves: list[chess.Move], sans: list[str]) -> list[str]:
+    intro = (
+        f"Welcome back to Chess Bits. Today we are studying {entry['opening']}. "
+        f"{entry['hook']} Here is the key idea: {entry['ideas']} "
+        "We will now play the sample line one move at a time. Listen for the move callout as the piece travels, "
+        "then watch the resulting position while we explain the idea."
+    )
+    move_segments = [move_narration(states[i], move, sans[i]) for i, move in enumerate(moves)]
+    outro = (
+        f"Now that we have seen the full line, here is the practical plan. {entry['plan']} "
+        f"A common mistake to avoid is this: {entry['mistake']} "
+        "When calculating, look for checks, captures, and direct threats for both sides. "
+        "Check whether a piece is left undefended, and compare which piece is least active before choosing a plan. "
+        f"Here is your training exercise. {entry['exercise']} "
+        "Pause the video and try to explain the plan from the final position in your own words. "
+        "Thanks for watching Chess Bits. Save this lesson for your next training session, and focus on the plan behind the moves."
+    )
+    return [intro, *move_segments, outro]
 
-Now consider the mistakes. {entry['mistake']}
 
-Use a simple calculation routine before you move. First look for checks, captures, and direct threats for both sides. Then check whether a proposed move leaves a piece undefended or opens a line toward your king. Finally, compare the least active piece on each side. If there is no forcing continuation, improving that piece is often better than making a speculative pawn push.
+def create_opening_voiceover(entry: dict, states: list[chess.Board],
+                             moves: list[chess.Move], sans: list[str],
+                             voice_path: Path) -> list[tuple[float, float]]:
+    """Build narration in clips and align each short piece animation to its own move callout."""
+    segment_dir = OUT_DIR / "opening_voice_segments"
+    segment_dir.mkdir(parents=True, exist_ok=True)
+    segments = make_opening_segments(entry, states, moves, sans)
+    wav_paths: list[Path] = []
+    durations: list[float] = []
 
-Here is your training exercise. {entry['exercise']}
+    for index, text in enumerate(segments):
+        mp3_path = segment_dir / f"segment_{index:03d}.mp3"
+        wav_path = segment_dir / f"segment_{index:03d}.wav"
+        asyncio.run(create_voiceover(text, mp3_path))
+        run_checked([
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(mp3_path),
+            "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(wav_path),
+        ], 180)
+        duration = probe_audio(wav_path)
+        wav_paths.append(wav_path)
+        durations.append(duration)
 
-When you review the game, pause at the first moment the centre changes. Predict the next move before revealing it, and explain the reason in one sentence. Repeat the exercise from the other side of the board. This is how opening knowledge turns into practical calculation.
+    concat_list = segment_dir / "concat.txt"
+    concat_list.write_text(
+        "\n".join(f"file '{path.resolve().as_posix()}'" for path in wav_paths) + "\n",
+        encoding="utf-8",
+    )
+    run_checked([
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+        "-f", "concat", "-safe", "0", "-i", str(concat_list),
+        "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", str(voice_path),
+    ], 600)
+    combined_duration = probe_audio(voice_path)
+    if abs(combined_duration - sum(durations)) > 0.35:
+        raise RuntimeError(
+            f"Segmented voiceover timing mismatch: segments={sum(durations):.3f}s, combined={combined_duration:.3f}s"
+        )
 
-Thanks for watching Chess Bits. Save this lesson for your next training session, and focus on the plan behind the moves rather than memorising them blindly. Play carefully, calculate forcing moves first, and keep improving one decision at a time.
-""".strip()
+    move_windows: list[tuple[float, float]] = []
+    cursor = durations[0]  # introductory strategy narration holds the starting position
+    for index, move_duration in enumerate(durations[1:-1]):
+        # The move narration begins with the mover/action; a short tween runs early,
+        # then the new position stays still while the rest of the explanation is spoken.
+        start = cursor + min(0.22, move_duration * 0.08)
+        animation = min(0.72, max(0.45, move_duration * 0.24))
+        animation = min(animation, max(0.35, move_duration - 0.25))
+        end = min(cursor + move_duration - 0.05, start + animation)
+        if end <= start:
+            raise RuntimeError(f"Invalid animation window for move {index + 1}.")
+        move_windows.append((round(start, 4), round(end, 4)))
+        cursor += move_duration
+
+    if len(move_windows) != len(moves):
+        raise RuntimeError("Narration timeline does not contain exactly one window per legal move.")
+    if any(move_windows[i][1] > move_windows[i + 1][0] for i in range(len(move_windows) - 1)):
+        raise RuntimeError("Narration move windows overlap.")
+    print(
+        f"MOVE_TIMELINE_READY moves={len(move_windows)} duration={combined_duration:.2f}s "
+        f"average_animation={sum(end-start for start, end in move_windows)/len(move_windows):.2f}s",
+        flush=True,
+    )
+    return move_windows
 
 
 def fetch_puzzle(target: date, used_ids: set[str]) -> tuple[str, dict, list[str], str]:
