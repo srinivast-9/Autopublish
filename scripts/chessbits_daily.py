@@ -207,7 +207,7 @@ OPENINGS = [
         "plan": "White should develop both knights, castle, and look for useful targets in the centre. Black should contest the centre, complete development, and avoid passive moves that allow White to coordinate the queen and bishops with tempo.",
         "mistake": "White should not assume that an open file guarantees an attack. Black should not defend passively or cling to every pawn if development falls behind. Count attackers and defenders before starting a forcing sequence.",
         "exercise": "Pause after White's f3 and calculate Black's best capture. Then follow how White's queen replaces the pawn and ask whether the open lines justify the material investment. Repeat the position from Black's side to practise defending against an initiative."
-    },,
+    },
     {
         "id": "evergreen-sacrifice-battery",
         "lesson_type": "tactics",
