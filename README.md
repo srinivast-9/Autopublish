@@ -63,8 +63,8 @@ These mail secrets are required for email alerts. Without them, publishing still
 ## Timing and recovery
 
 - Primary attempt: daily at 5:00 PM IST.
-- Recovery attempts: every hour after 5:00 PM IST until 12:00 PM the following day.
-- Overnight retries may catch up an earlier missed calendar date immediately, but do not publish a new day's normal slot before 5:00 PM IST.
+- Workflow checks run every hour around the clock. A new day's normal upload is gated until 5:00 PM IST, but any older missed date keeps retrying hourly.
+- Hourly retries do not publish an extra video once the current day's upload is confirmed public.
 - Only one publisher job can run at a time. Failed dates remain due and are retried; the next successful upload advances the ledger. Same-day additional uploads do not shift the next day's alternating content type.
 - The workflow is also available under **GitHub → Actions → Chess Bits Daily Auto Publisher → Run workflow** for an initial manual test.
 
