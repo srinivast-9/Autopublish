@@ -213,6 +213,10 @@ OPENINGS = [
     },
     {
         "id": "evergreen-sacrifice-battery",
+        "focus": "the knight check that deflects the g-pawn, the rook offer on e7, and the queen offer that draws the king into the bishops' mating net",
+        "takeaway": "Each sacrifice has a concrete job: Nf6+ draws the g-pawn away, Rxe7+ pulls a defender to e7, and Qxd7+ lures the king into the bishops' mating net. Calculate the forcing replies that make each offer work.",
+        "training_prompt": "Pause before Nf6+ and Qxd7+. For each sacrifice, identify the defender being diverted and explain why the bishop that remained on a3 becomes decisive.",
+        "move_notes": {"16":"The pawn advances to e5 with tempo against Black's queen on f6. Attacking the queen while gaining central space forces it to move and gives White more time to bring the remaining pieces into the attack.","32":"The knight sacrifice on f6 is a deflection idea: the check invites Black's g-pawn to capture. If Black accepts, the kingside pawn cover is damaged and White's e-pawn can recapture to create a dangerous passed pawn.","34":"The e-pawn recaptures on f6, removing the deflecting pawn and becoming a dangerous advanced passer. Black must now spend time controlling that pawn while White's pieces continue attacking.","38":"The rook sacrifice on e7 is a forcing deflection. If Black's knight captures the rook, the d7 pawn and king become vulnerable to the queen's next check; the point is the sequence, not the rook by itself.","40":"White deliberately offers the queen on d7 with check. If the king accepts, it is drawn away from the back rank and into the bishops' mating net. This queen sacrifice works only because the following checks are forcing.","46":"The bishop captures the knight on e7 and delivers mate. The bishop that stayed on a3 joins at exactly the right moment, while the other attacking pieces have driven the king onto vulnerable squares."},
         "lesson_type": "tactics",
         "title": "The Evergreen Combination: Sacrifice, Deflection, and a Mating Battery",
         "opening": "queen sacrifice, deflection, and mating batteries",
@@ -226,6 +230,10 @@ OPENINGS = [
     },
     {
         "id": "opera-deflection-rook-battery",
+        "focus": "how the knight offer draws a pawn away, how the rooks seize the open d-file, and how the final queen sacrifice clears the mating line",
+        "takeaway": "The early knight offer draws Black's c-pawn away so the bishop can recapture with check. At the finish, Qb8+ lures the knight away from d7 and allows Rd8 mate along the open file.",
+        "training_prompt": "At Nxb5, identify which pawn is being lured off its file. At Qb8+, find why the knight's capture of the queen leaves the rook's mating route open.",
+        "move_notes": {"18":"White's knight takes the pawn on b5, allowing Black's c-pawn to recapture. That is the point of the offer: draw the c-pawn away so the bishop can recapture on b5 with check.","20":"The bishop recaptures on b5 with check. The knight offer has removed both the b-pawn and the c-pawn, and the check gains a tempo by forcing Black to block with the other knight.","24":"The rook sacrifice on d7 clears the file and pulls Black's rook from d8 down to d7. White's remaining rook can then take over the open d-file; the point is the coordination sequence, not a one-move exchange win.","30":"The queen check on b8 is a deliberate sacrifice. Black's knight can capture it, but that pulls the defender away from d7 and allows White's rook to reach d8 with mate.","32":"The rook slides to d8 for checkmate because the queen bait has removed Black's knight from d7 and the d-file is open. The king has no legal escape."},
         "lesson_type": "tactics",
         "title": "Deflection and the Rook Battery: A Complete Tactical Combination",
         "opening": "deflection, sacrifice, and a final rook battery",
@@ -239,6 +247,10 @@ OPENINGS = [
     },
     {
         "id": "immortal-game-sacrifice",
+        "focus": "how the opening exposes White's king, how the e-pawn gains tempo against the knight, and how the queen sacrifice deflects the final defender",
+        "takeaway": "The finishing idea is more than a queen sacrifice: Qf6+ induces the knight on g8 to capture the queen, drawing it away from e7. That lets the bishop deliver mate on e7.",
+        "training_prompt": "Before Qf6+, identify the defenders around Black's king. After ...Nxf6, explain why Be7 is mate and which defensive square the knight has abandoned.",
+        "move_notes": {"4":"The bishop develops to c4 and targets f7, one of Black's most vulnerable squares before castling. White is building a concrete target, but the king on f1 will soon need care.","5":"Black's queen check on h4 exploits White's exposed king before it can castle. The check forces a king move and shows why attacking chances must always be weighed against king safety.","36":"The e-pawn advances to e5 and attacks the knight on f6 with tempo. This central thrust gains space while forcing Black to address a new threat instead of simply consolidating the extra material.","40":"The knight captures the g7 pawn with check, forcing the king toward d8 and keeping the attack alive. The check is useful because it brings the king toward the squares the remaining pieces can target.","42":"Qf6+ is a deliberate queen sacrifice. Black's knight can take the queen, but doing so moves it from g8 and abandons control of e7, allowing the bishop to finish with mate."},
         "lesson_type": "tactics",
         "title": "A Storm of Sacrifices: Initiative, Deflection, and Checkmate",
         "opening": "forcing sacrifices and a mating attack",
@@ -327,7 +339,10 @@ def validate_openings() -> None:
             raise RuntimeError(f"Opening line is too short or invalid: {entry['id']}")
         # Also verify that each move's SAN can be spoken without misreading + or #.
         for index, move in enumerate(moves):
-            move_narration(states[index], move, sans[index])
+            for note_ply, note in entry.get("move_notes", {}).items():
+                if not str(note_ply).isdigit() or int(note_ply) < 0 or int(note_ply) >= len(moves) or not str(note).strip():
+                    raise RuntimeError(f"Invalid move commentary index or empty note in {entry['id']}: {note_ply}")
+            move_narration(states[index], move, sans[index], entry, index)
 
 
 def validate_synchronized_animation() -> None:
@@ -337,8 +352,18 @@ def validate_synchronized_animation() -> None:
     segments = make_opening_segments(entry, states, moves, sans)
     if len(segments) != len(moves) + 2 or any(not segment.strip() for segment in segments):
         raise RuntimeError("Opening narration must include a non-empty intro, one clip per move, and an outro.")
-    if len([move_narration(states[i], move, sans[i]) for i, move in enumerate(moves)]) != len(moves):
+    if len([move_narration(states[i], move, sans[i], entry, i) for i, move in enumerate(moves)]) != len(moves):
         raise RuntimeError("There must be exactly one spoken move cue for every legal move.")
+    tactical_entry = next((item for item in OPENINGS if item.get("lesson_type") == "tactics" and item.get("move_notes")), None)
+    if tactical_entry is not None:
+        tactical_states, tactical_moves, tactical_sans, _ = renderer.parse_pgn(pgn_for_opening(tactical_entry), False)
+        tactical_segments = make_opening_segments(tactical_entry, tactical_states, tactical_moves, tactical_sans)
+        for note_ply, note in tactical_entry.get("move_notes", {}).items():
+            if str(note) not in tactical_segments[int(note_ply) + 1]:
+                raise RuntimeError(f"Position-specific commentary was not attached to ply {note_ply} of {tactical_entry['id']}.")
+        generic_phrases = ("The knight's new square changes", "The rook is improving its line", "Check whether the capturing piece can be recaptured")
+        if any(phrase in segment for segment in tactical_segments for phrase in generic_phrases):
+            raise RuntimeError("Generic repetitive move narration has reappeared.")
     windows = [(0.5 + i * 1.5, 1.2 + i * 1.5) for i in range(len(moves))]
     duration = windows[-1][1] + 2.0
     long_frame = renderer.frame_at(
@@ -644,67 +669,211 @@ def spoken_san(board: chess.Board, move: chess.Move, san: str) -> str:
     return phrase
 
 
-def move_narration(board: chess.Board, move: chess.Move, san: str) -> str:
-    """One legal move callout with correctly spoken SAN suffix and short, factual explanation."""
+def _piece_word(piece: chess.Piece | None) -> str:
+    if piece is None:
+        return "piece"
+    return {
+        chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop",
+        chess.ROOK: "rook", chess.QUEEN: "queen", chess.KING: "king",
+    }[piece.piece_type]
+
+
+def _square_voice(square: chess.Square) -> str:
+    """Format a square in a way that TTS reliably reads aloud."""
+    return f"{chess.FILE_NAMES[chess.square_file(square)]} {chess.square_rank(square) + 1}"
+
+
+def move_narration(board: chess.Board, move: chess.Move, san: str,
+                   entry: dict | None = None, ply: int | None = None) -> str:
+    """Narrate the legal move and add concrete analysis only when the position supports it."""
     side = "White" if board.turn == chess.WHITE else "Black"
+    opponent = not board.turn
+    opponent_name = "White" if opponent == chess.WHITE else "Black"
     piece = board.piece_at(move.from_square)
     if piece is None:
         raise RuntimeError("Cannot narrate a move without a moving piece.")
-    piece_names = {
-        chess.PAWN: "pawn", chess.KNIGHT: "knight", chess.BISHOP: "bishop",
-        chess.ROOK: "rook", chess.QUEEN: "queen", chess.KING: "king",
-    }
-    piece_name = piece_names[piece.piece_type]
+    piece_name = _piece_word(piece)
     move_callout = spoken_san(board, move, san)
     after = board.copy(stack=False)
     after.push(move)
+
+    # Hand-written annotations are indexed by zero-based ply and take priority over
+    # generic analysis. This is where the lesson explains the actual idea behind a key move.
+    if entry is not None and ply is not None:
+        note = entry.get("move_notes", {}).get(str(ply))
+        if note:
+            return f"{side} plays {move_callout}. {note}"
+
     if after.is_checkmate():
-        return f"{side} plays {move_callout}. That is checkmate; there is no legal escape."
+        return f"{side} plays {move_callout}. The king has no legal escape; the mating net is complete."
+
     if after.is_check():
-        return f"{side} plays {move_callout}. The king must answer the check."
+        king_square = after.king(opponent)
+        checking_squares = after.attackers(board.turn, king_square) if king_square is not None else set()
+        if move.to_square not in checking_squares:
+            discovered_from = next(
+                (sq for sq in checking_squares if sq != move.to_square and after.piece_at(sq) is not None),
+                None,
+            )
+            if discovered_from is not None:
+                discovered_piece = _piece_word(after.piece_at(discovered_from))
+                return (
+                    f"{side} plays {move_callout}. By vacating {_square_voice(move.from_square)}, "
+                    f"the move uncovers check from the {discovered_piece} on {_square_voice(discovered_from)}."
+                )
+        return (
+            f"{side} plays {move_callout}. The {piece_name} gives check directly, "
+            "so the defender must answer before continuing its own plan."
+        )
+
+    # Detect a newly created fork against major pieces by the piece that just moved.
+    major_targets = []
+    for target_square, target_piece in after.piece_map().items():
+        if target_piece.color != opponent or target_piece.piece_type not in (chess.QUEEN, chess.ROOK):
+            continue
+        if move.to_square in after.attackers(board.turn, target_square) and \
+                move.from_square not in board.attackers(board.turn, target_square):
+            major_targets.append((target_square, target_piece))
+    if len(major_targets) >= 2:
+        target_text = " and ".join(
+            f"{opponent_name}'s {_piece_word(target_piece)} on {_square_voice(square)}"
+            for square, target_piece in major_targets[:2]
+        )
+        return (
+            f"{side} plays {move_callout}. This creates a fork against {target_text}; "
+            "the defender has two major threats to deal with at once."
+        )
+    if len(major_targets) == 1:
+        target_square, target_piece = major_targets[0]
+        return (
+            f"{side} plays {move_callout}. The {piece_name} now attacks "
+            f"{opponent_name}'s {_piece_word(target_piece)} on {_square_voice(target_square)}, "
+            "so it must be moved or defended."
+        )
+
+    # Detect a newly opened sliding attack, such as a rook or bishop line revealed
+    # when another piece moves out of the way.
+    for target_square, target_piece in after.piece_map().items():
+        if target_piece.color != opponent or target_piece.piece_type not in (
+            chess.QUEEN, chess.ROOK, chess.BISHOP
+        ):
+            continue
+        old_attackers = board.attackers(board.turn, target_square)
+        for source_square in after.attackers(board.turn, target_square):
+            if source_square == move.to_square or source_square in old_attackers:
+                continue
+            source_piece = after.piece_at(source_square)
+            if source_piece is not None and source_piece.piece_type in (
+                chess.ROOK, chess.BISHOP, chess.QUEEN
+            ):
+                return (
+                    f"{side} plays {move_callout}. Moving the {piece_name} away from "
+                    f"{_square_voice(move.from_square)} opens the { _piece_word(source_piece) } "
+                    f"on {_square_voice(source_square)} against {opponent_name}'s "
+                    f"{_piece_word(target_piece)} on {_square_voice(target_square)}."
+                )
+
+    # A newly pinned enemy piece cannot move freely without exposing its king.
+    for target_square, target_piece in after.piece_map().items():
+        if target_piece.color == opponent and target_piece.piece_type != chess.KING:
+            if after.is_pinned(opponent, target_square) and not board.is_pinned(opponent, target_square):
+                return (
+                    f"{side} plays {move_callout}. This pins {opponent_name}'s "
+                    f"{_piece_word(target_piece)} on {_square_voice(target_square)} to its king; "
+                    "moving it would expose check."
+                )
+
     if board.is_castling(move):
-        explanation = "This improves king safety and helps connect the rooks."
-    elif board.is_en_passant(move):
-        explanation = "This is an en passant capture; the pawn is removed from the square it passed."
-    elif board.is_capture(move):
-        explanation = "Check whether the capturing piece can be recaptured before evaluating the exchange."
-    elif move.promotion:
-        explanation = "Promotion changes the pawn into a more powerful piece; verify that the new piece is safe."
-    elif piece.piece_type == chess.PAWN:
-        explanation = "This pawn move changes the structure and the squares each side can use."
-    elif piece.piece_type == chess.KNIGHT:
-        explanation = "The knight's new square changes its control of central and tactical squares."
-    elif piece.piece_type == chess.BISHOP:
-        explanation = "The bishop's diagonal and the targets it attacks have changed."
-    elif piece.piece_type == chess.ROOK:
-        explanation = "The rook is improving its line and coordination with the other pieces."
-    elif piece.piece_type == chess.QUEEN:
-        explanation = "The queen changes its pressure and coordination with the other pieces."
-    else:
-        explanation = "Check king safety and the opponent's forcing replies after the king move."
-    return f"{side} plays {move_callout}. {explanation}"
+        return (
+            f"{side} plays {move_callout}. Castling secures the king and brings a rook toward "
+            "the centre, where open files may become important."
+        )
+
+    if board.is_en_passant(move):
+        return (
+            f"{side} plays {move_callout}. En passant removes the pawn from the square it passed, "
+            "so the capture changes the pawn structure in a way an ordinary capture does not."
+        )
+
+    if move.promotion:
+        return (
+            f"{side} plays {move_callout}. The pawn promotes on {_square_voice(move.to_square)}; "
+            "the new piece must still be checked for immediate tactical threats."
+        )
+
+    # Explain central pawn moves with the actual squares they now control.
+    if piece.piece_type == chess.PAWN:
+        destination_file = chess.square_file(move.to_square)
+        destination_rank = chess.square_rank(move.to_square)
+        if destination_file in (3, 4) and destination_rank in (2, 3, 4, 5):
+            centre = (chess.D4, chess.E4, chess.D5, chess.E5)
+            controlled = [
+                chess.square_name(square) for square in centre
+                if square in after.attacks(move.to_square)
+            ]
+            if controlled:
+                targets = " and ".join(f"{sq[0]} {sq[1]}" for sq in controlled)
+                return (
+                    f"{side} plays {move_callout}. The central pawn now attacks {targets}, "
+                    "helping contest the centre and opening lines for the pieces behind it."
+                )
+
+    # Explain genuine piece development using the central squares controlled from its new square.
+    if piece.piece_type in (chess.KNIGHT, chess.BISHOP):
+        home_rank = 0 if board.turn == chess.WHITE else 7
+        if chess.square_rank(move.from_square) == home_rank:
+            centre = (chess.D4, chess.E4, chess.D5, chess.E5)
+            controlled = [
+                chess.square_name(square) for square in centre
+                if square in after.attacks(move.to_square)
+            ]
+            if controlled:
+                targets = " and ".join(f"{sq[0]} {sq[1]}" for sq in controlled)
+                return (
+                    f"{side} plays {move_callout}. The {piece_name} develops to "
+                    f"{_square_voice(move.to_square)} and adds control over {targets}."
+                )
+
+    # Quiet moves need not be padded with generic advice after every single ply.
+    # Their SAN callout remains synchronized with the board animation.
+    return f"{side} plays {move_callout}"
 
 
 def make_opening_segments(entry: dict, states: list[chess.Board],
                           moves: list[chess.Move], sans: list[str]) -> list[str]:
-    intro = (
-        f"Welcome back to Chess Bits. Today we are studying {entry['opening']}. "
-        f"{entry['hook']} Here is the key idea: {entry['ideas']} "
-        "We will now play the sample line one move at a time. Listen for the move callout as the piece travels, "
-        "then watch the resulting position while we explain the idea."
-    )
-    move_segments = [move_narration(states[i], move, sans[i]) for i, move in enumerate(moves)]
-    outro = (
-        f"Now that we have seen the full line, here is the practical plan. {entry['plan']} "
-        f"A common mistake to avoid is this: {entry['mistake']} "
-        "When calculating, look for checks, captures, and direct threats for both sides. "
-        "Check whether a piece is left undefended, and compare which piece is least active before choosing a plan. "
-        f"Here is your training exercise. {entry['exercise']} "
-        "Pause the video and try to explain the plan from the final position in your own words. "
-        "Thanks for watching Chess Bits. Save this lesson for your next training session, and focus on the plan behind the moves."
-    )
-    return [intro, *move_segments, outro]
+    is_tactics = entry.get("lesson_type") == "tactics"
+    if is_tactics:
+        focus = entry.get("focus", entry["opening"])
+        intro = (
+            f"Welcome back to Chess Bits. Today's lesson is {entry['title']}. "
+            f"{entry['hook']} Watch for {focus}."
+        )
+    else:
+        intro = (
+            f"Welcome back to Chess Bits. Today we are studying {entry['opening']}. "
+            f"{entry['hook']}"
+        )
 
+    move_segments = [
+        move_narration(states[i], move, sans[i], entry, i)
+        for i, move in enumerate(moves)
+    ]
+
+    if is_tactics:
+        takeaway = entry.get("takeaway", entry["plan"])
+        training_prompt = entry.get("training_prompt", entry["exercise"])
+        outro = f"Key takeaway: {takeaway} Training question: {training_prompt}"
+        book_reference = entry.get("book_reference")
+        if book_reference:
+            outro += f" For further study, see {book_reference}."
+    else:
+        outro = (
+            f"Practical plan: {entry['plan']} "
+            f"One mistake to avoid: {entry['mistake']} "
+            f"Training exercise: {entry['exercise']} "
+            "Thanks for watching Chess Bits."
+        )
+    return [intro, *move_segments, outro]
 
 def create_segmented_voiceover(segments: list[str | None], voice_path: Path,
                                segment_dir_name: str, move_start_segment: int,
