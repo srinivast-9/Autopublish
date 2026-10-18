@@ -114,6 +114,37 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-18",
+      "kind": "puzzle",
+      "topic_id": "puzzle-classic-immortal-combination",
+      "title": "Can You Find Mate in 3? | Chess Puzzle",
+      "video_id": "gJjqq65UzYw",
+      "url": "https://www.youtube.com/watch?v=gJjqq65UzYw",
+      "published_at": "2026-10-18T17:06:19.397610+05:30",
+      "qa": {
+        "duration_seconds": 75.59,
+        "bytes": 4295316,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 5,
+        "music_included": true
+      },
+      "puzzle_id": "classic-immortal-combination",
+      "puzzle_rating": null,
+      "puzzle_signature": "a8fb84ac3c7e2f722ba08e6da024933f9ab243e275d19bb9716cbb3c3803cfda",
+      "puzzle_position_signature": "789e5a57ee5961caf2269ee414e5bd55a3bf587d316b475e4e4af51fcc388023",
+      "puzzle_source": "curated_classic_game",
+      "puzzle_themes": [
+        "sacrifice",
+        "deflection",
+        "mating attack"
+      ],
+      "puzzle_primary_theme": "sacrifice",
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
