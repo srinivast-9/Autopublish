@@ -172,6 +172,38 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-20",
+      "kind": "puzzle",
+      "topic_id": "puzzle-classic-opera-combination",
+      "title": "Can You Find Mate in 3? | Chess Puzzle",
+      "video_id": "A4FyXVWL3S8",
+      "url": "https://www.youtube.com/watch?v=A4FyXVWL3S8",
+      "published_at": "2026-10-20T19:18:34.914416+05:30",
+      "qa": {
+        "duration_seconds": 72.17,
+        "bytes": 4013606,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 5,
+        "music_included": true
+      },
+      "puzzle_id": "classic-opera-combination",
+      "puzzle_rating": null,
+      "puzzle_signature": "4c7696d3bfbaddc222d73e33717c117ec83bee338c037407f3250735354e8d5a",
+      "puzzle_position_signature": "21d1081be5fd882702ee063c0f40cb490281ee601ad86457369593601bf0cc33",
+      "puzzle_source": "curated_classic_game",
+      "puzzle_themes": [
+        "deflection",
+        "removal of defender",
+        "rook battery",
+        "sacrifice"
+      ],
+      "puzzle_primary_theme": "rook battery",
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
