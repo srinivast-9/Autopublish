@@ -204,6 +204,33 @@
       "puzzle_primary_theme": "rook battery",
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-21",
+      "kind": "opening",
+      "topic_id": "kings-gambit",
+      "title": "King's Gambit: Initiative and King Safety",
+      "video_id": "D11bI3jqtDA",
+      "url": "https://www.youtube.com/watch?v=D11bI3jqtDA",
+      "published_at": "2026-10-21T19:37:31.610731+05:30",
+      "qa": {
+        "duration_seconds": 191.0,
+        "bytes": 10518149,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 23,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
