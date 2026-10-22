@@ -231,6 +231,38 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-22",
+      "kind": "puzzle",
+      "topic_id": "puzzle-classic-evergreen-combination",
+      "title": "Can You Find Mate in 3? | Chess Puzzle",
+      "video_id": "V2TEWjhvxVg",
+      "url": "https://www.youtube.com/watch?v=V2TEWjhvxVg",
+      "published_at": "2026-10-22T19:34:22.491973+05:30",
+      "qa": {
+        "duration_seconds": 70.97,
+        "bytes": 3921482,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 5,
+        "music_included": true
+      },
+      "puzzle_id": "classic-evergreen-combination",
+      "puzzle_rating": null,
+      "puzzle_signature": "30951ab105cda1e90115637920a99cda80b896535b6417d02c159d989bc22643",
+      "puzzle_position_signature": "bdc5c11a877bab1127b2abd64a55a71cf58575022bb570eba849d50b1e77e7f0",
+      "puzzle_source": "curated_classic_game",
+      "puzzle_themes": [
+        "queen sacrifice",
+        "deflection",
+        "mating attack",
+        "battery"
+      ],
+      "puzzle_primary_theme": "deflection",
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
