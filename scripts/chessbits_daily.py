@@ -1311,6 +1311,46 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
         reveal_end = min(duration - 0.25, max(reveal_end, move_windows[-1][1] + 0.25))
     # Save a clean initial-position frame for the YouTube thumbnail.
     thumb_frame = renderer.frame_at(mode, title, states, moves, sans, mate, 0.0, duration, reveal_end, move_windows)
+    # Add a bold, readable title treatment to the generated board thumbnail.
+    # Keep the board visible while giving the viewer a clear reason to click.
+    from PIL import Image, ImageDraw, ImageFont
+    thumb_frame = thumb_frame.convert("RGB")
+    draw = ImageDraw.Draw(thumb_frame, "RGBA")
+    w, h = thumb_frame.size
+    band_h = int(h * (0.22 if mode == "puzzle_short" else 0.19))
+    top = int(h * (0.04 if mode == "puzzle_short" else 0.05))
+    draw.rounded_rectangle(
+        (int(w * 0.035), top, int(w * 0.965), top + band_h),
+        radius=max(12, int(w * 0.018)), fill=(7, 18, 30, 224),
+        outline=(92, 210, 174, 245), width=max(2, int(w * 0.003))
+    )
+    try:
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        font_size = int(band_h * (0.32 if mode == "puzzle_short" else 0.29))
+        font = ImageFont.truetype(font_path, font_size)
+    except OSError:
+        font = ImageFont.load_default()
+    if mode == "puzzle_short":
+        headline = title.upper().replace("| CHESS PUZZLE", "").strip()
+        subline = "FIND THE WINNING MOVE"
+    else:
+        headline = title.upper()
+        subline = "CHESS BITS • TACTICS & STRATEGY"
+    max_width = int(w * 0.86)
+    while font.size > 10 and draw.textbbox((0, 0), headline, font=font)[2] > max_width:
+        font = ImageFont.truetype(font_path, font.size - 2)
+    bbox = draw.textbbox((0, 0), headline, font=font)
+    headline_y = top + int(band_h * 0.15)
+    draw.text(((w - (bbox[2] - bbox[0])) / 2, headline_y), headline, font=font,
+              fill=(255, 255, 255, 255), stroke_width=max(1, int(w * 0.0015)),
+              stroke_fill=(0, 0, 0, 230))
+    try:
+        subfont = ImageFont.truetype(font_path, max(10, int(band_h * 0.17)))
+    except OSError:
+        subfont = ImageFont.load_default()
+    subbbox = draw.textbbox((0, 0), subline, font=subfont)
+    draw.text(((w - (subbbox[2] - subbbox[0])) / 2, top + int(band_h * 0.68)),
+              subline, font=subfont, fill=(92, 240, 190, 255))
     thumb_frame.save(thumbnail_path, format="JPEG", quality=94, optimize=True)
     thumb_frame.close()
     if not thumbnail_path.is_file() or thumbnail_path.stat().st_size < 5_000 or thumbnail_path.stat().st_size > 2_000_000:
@@ -1474,14 +1514,19 @@ def main() -> int:
         used_topics = {row.get("topic_id") for row in state.get("published", [])}
         longform_rows = [row for row in state.get("published", []) if row.get("kind") == "opening"]
         longform_count = len(longform_rows)
-        want_tactics = longform_count >= 2 and longform_count % 3 == 2
+        # Keep regular openings/gambits as the backbone, but insert book-inspired
+        # tactical lessons on varied dates rather than on a rigid predictable cycle.
+        # The concepts are explained in original words; the book is a further-study reference.
+        rng = random.Random(f"chessbits-tactics-antenna-{target.isoformat()}")
+        tactical_due = longform_count >= 1 and rng.random() < 0.38
+        want_tactics = tactical_due or (longform_count >= 2 and longform_count % 3 == 2)
         candidates = [
             row for row in OPENINGS
             if row["id"] not in used_topics and (row.get("lesson_type") == "tactics") == want_tactics
         ]
         if not candidates:
             candidates = [row for row in OPENINGS if row["id"] not in used_topics]
-        entry = candidates[0] if candidates else OPENINGS[len(state.get("published", [])) % len(OPENINGS)]
+        entry = rng.choice(candidates) if candidates else OPENINGS[len(state.get("published", [])) % len(OPENINGS)]
         title = entry["title"]
         pgn = pgn_for_opening(entry)
         states, moves, sans, mate = renderer.parse_pgn(pgn, False)
@@ -1490,9 +1535,8 @@ def main() -> int:
         topic_id = entry["id"]
         if entry.get("lesson_type") == "tactics":
             description = (
-                f"{title}\n\nAn original, move-by-move Chess Bits tactics lesson covering forcing moves, deflection, sacrifice, "
-                "pins, batteries, and practical calculation. This lesson uses original explanations and a legally checked demonstration line.\n\n"
-                f"Further study: {entry.get('book_reference', 'Technique of Modern Tactics by P. S. Bond and M. J. McDonough (1919, public-domain edition)')}.\n\n"
+                f"{title}\n\nAn original, move-by-move Chess Bits tactics lesson. Learn how to spot candidate combinations by checking loose pieces, forcing moves, overloaded defenders, pins, deflections, interference, and mating threats. The demonstration line is legally checked; explanations are original and are not copied from a book.\n\n"
+                f"Further study: {entry.get('book_reference', 'Tune Your Chess Tactics Antenna: Know When (and Where!) to Look for Winning Combinations')}.\n\n"
                 "#Chess #ChessTactics #ChessBits"
             )
             tags = ["chess", "chess tactics", "chess combinations", "deflection", "sacrifice", "mating attack", "Chess Bits"]
