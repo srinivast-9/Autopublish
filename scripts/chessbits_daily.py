@@ -977,13 +977,12 @@ def create_puzzle_voiceover(script: str, pgn: str, puzzle_meta: dict,
         move_narration(states[index], move, sans[index])
         for index, move in enumerate(moves)
     ]
-    themes = ", ".join(puzzle_meta.get("themes") or []) or "calculation and piece activity"
-    outro = (
-        f"The tactical themes are {themes}. Follow the full sequence and look at the final position. "
-        + ("The line ends in checkmate. " if mate else "The line completes the intended tactical idea. ")
-        + "Before moving, calculate every forcing reply and check whether the opponent has a recapture. "
-        "Save this puzzle and try solving it again without hints. Follow Chess Bits for more tactics and opening lessons."
-    )
+    primary_theme = puzzle_meta.get("primary_theme")
+    if primary_theme:
+        theme_label = re.sub(r"(?<!^)(?=[A-Z])", " ", str(primary_theme)).lower()
+        outro = f"Key idea: {theme_label}. The line ends in checkmate. Follow Chess Bits for more puzzles."
+    else:
+        outro = "The line ends in checkmate. Calculate the opponent's best reply before choosing a move. Follow Chess Bits for more puzzles."
     # None inserts seven seconds of silence after the introduction. No solution move is narrated
     # or animated during that interval.
     segments: list[str | None] = [intro.strip(), None, *move_segments, outro]
@@ -1110,19 +1109,13 @@ def validate_classic_puzzle_bank() -> None:
 
 
 def make_puzzle_script(rating: int | None, side: str, themes: list[str], sans: list[str], mate: bool) -> str:
-    lead = "Here is a challenging chess puzzle."
-    if rating is not None:
-        lead += f" It has a difficulty rating of {rating}."
-    return (
-        f"{lead} {side} is to move. Can you find the forcing continuation? "
-        "Pause and calculate checks, captures, and threats before looking at the answer. "
-        "\n__PUZZLE_REVEAL__\n"
-        f"The solution is {', '.join(sans)}. "
-        f"The key tactical ideas are {', '.join(themes) if themes else 'calculation and piece activity'}. "
-        "Notice how the forcing continuation limits the opponent's choices. Check the whole sequence and the final position. "
-        + ("The line ends in checkmate. " if mate else "The line completes the intended tactical idea. ")
-        + "Replay the line once more, then try to find the first move without hints. Save the puzzle and practise calculating all forcing replies. Follow Chess Bits for more challenging chess puzzles."
-    )
+    # Keep the hook short so the visual puzzle—not generic narration—does the work.
+    mate_in = max(1, (len(sans) + 1) // 2)
+    lead = f"{side} to move. Find mate in {mate_in}. Look for checks, captures, and threats."
+    if rating is not None and rating >= 2400:
+        lead = f"{side} to move. This is a difficult one: mate in {mate_in}. Calculate forcing moves."
+    # The solution is assembled from verified SAN moves by create_puzzle_voiceover.
+    return f"{lead}\\n__PUZZLE_REVEAL__\\nThe solution is {', '.join(sans)}."
 
 
 def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
@@ -1582,7 +1575,93 @@ def main() -> int:
             target, used_puzzles, used_signatures, used_position_signatures, recent_themes, puzzle_count
         )
         mate_in = (len(solution_sans) + 1) // 2
-        title = f"Can You Find Mate in {mate_in}? | Chess Puzzle"
+        primary = str(puzzle_meta.get("primary_theme") or "")
+        normalized_theme = re.sub(r"(?<!^)(?=[A-Z])", " ", primary).strip().lower()
+        theme_title_options = {
+            "deflection": [
+                "Can You Deflect the Defender? | Mate in {n}",
+                "The Defender Must Move | Mate in {n}",
+                "One Deflection Opens the Mate | Mate in {n}",
+            ],
+            "sacrifice": [
+                "Would You Sacrifice for Mate in {n}?",
+                "The Sacrifice That Forces Mate in {n}",
+                "Material Down, Mate in {n} | Can You Find It?",
+            ],
+            "pin": [
+                "Spot the Pin That Forces Mate in {n}",
+                "The Hidden Pin | Mate in {n}",
+                "Can You Use This Pin to Find Mate in {n}?",
+            ],
+            "skewer": [
+                "The Hidden Skewer | Mate in {n}",
+                "Spot the Skewer Before Mate in {n}",
+                "One Skewer, Then Mate in {n}",
+            ],
+            "fork": [
+                "One Fork, Forced Mate in {n}?",
+                "Spot the Fork That Leads to Mate in {n}",
+                "The Fork Is the Clue | Mate in {n}",
+            ],
+            "interference": [
+                "Break the Defence—Mate in {n}",
+                "Find the Interference | Mate in {n}",
+                "Cut the Defence, Find Mate in {n}",
+            ],
+            "discovered attack": [
+                "Find the Discovered Attack | Mate in {n}",
+                "The Hidden Attack Before Mate in {n}",
+                "Can You Spot the Discovered Attack?",
+            ],
+            "double check": [
+                "Double Check—Can You Force Mate in {n}?",
+                "The Double-Check Clue | Mate in {n}",
+                "Spot the Double Check Before Mate",
+            ],
+            "hanging piece": [
+                "The Loose Defender | Mate in {n}",
+                "Spot the Hanging Piece—Mate in {n}",
+                "One Loose Piece, Mate in {n}",
+            ],
+            "trapped piece": [
+                "Trap the Defender: Mate in {n}",
+                "The Trapped Piece Is the Clue | Mate in {n}",
+                "Can You Exploit the Trapped Piece?",
+            ],
+            "back rank mate": [
+                "Spot the Back-Rank Weakness | Mate in {n}",
+                "Back-Rank Trouble: Find Mate in {n}",
+                "Can You Punish the Weak Back Rank?",
+            ],
+            "promotion": [
+                "Promotion Threat or Mate in {n}?",
+                "The Promotion Clue | Mate in {n}",
+                "Can You Find the Winning Promotion Tactic?",
+            ],
+            "removal of defender": [
+                "Remove the Defender | Mate in {n}",
+                "Can You Eliminate the Key Defender?",
+                "The Defender Must Fall—Mate in {n}",
+            ],
+            "rook battery": [
+                "The Rook Battery | Mate in {n}",
+                "Spot the Battery Before Mate in {n}",
+                "Two Rooks, One Forced Mate",
+            ],
+            "queen sacrifice": [
+                "Would You Give Up the Queen for Mate in {n}?",
+                "The Queen Sacrifice That Forces Mate",
+                "Find the Queen Sacrifice | Mate in {n}",
+            ],
+        }
+        options = theme_title_options.get(normalized_theme) or [
+            "Can You Find Mate in {n}? | Chess Puzzle",
+            "One Winning Line: Mate in {n} Moves",
+            "Find the Hidden Mate in {n} Moves",
+            "Only One Line Wins: Mate in {n}",
+        ]
+        title_seed = int(hashlib.sha256(str(puzzle_meta.get("id", target.isoformat())).encode("utf-8")).hexdigest()[:8], 16)
+        title = options[title_seed % len(options)].format(n=mate_in)
         mode = "puzzle_short"
         topic_id = "puzzle-" + puzzle_meta["id"]
         rating_note = f"Difficulty rating: {puzzle_meta['rating']}.\n" if puzzle_meta.get("rating") is not None else ""
