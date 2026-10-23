@@ -263,6 +263,33 @@
       "puzzle_primary_theme": "deflection",
       "music_track": "ncs-free",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-23",
+      "kind": "opening",
+      "topic_id": "opera-deflection-rook-battery",
+      "title": "Deflection and the Rook Battery: A Complete Tactical Combination",
+      "video_id": "YnJ_cVLZhNQ",
+      "url": "https://www.youtube.com/watch?v=YnJ_cVLZhNQ",
+      "published_at": "2026-10-23T19:49:02.434260+05:30",
+      "qa": {
+        "duration_seconds": 298.34,
+        "bytes": 15854689,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": true,
+        "plies": 33,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
