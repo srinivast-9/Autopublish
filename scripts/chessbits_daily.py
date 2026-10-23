@@ -1324,21 +1324,30 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
         radius=max(12, int(w * 0.018)), fill=(7, 18, 30, 224),
         outline=(92, 210, 174, 245), width=max(2, int(w * 0.003))
     )
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    font_size = int(band_h * (0.32 if mode == "puzzle_short" else 0.29))
     try:
-        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-        font_size = int(band_h * (0.32 if mode == "puzzle_short" else 0.29))
         font = ImageFont.truetype(font_path, font_size)
+        font_is_scalable = True
     except OSError:
         font = ImageFont.load_default()
+        font_is_scalable = False
     if mode == "puzzle_short":
         headline = title.upper().replace("| CHESS PUZZLE", "").strip()
         subline = "FIND THE WINNING MOVE"
+        cue = "?"
     else:
         headline = title.upper()
-        subline = "CHESS BITS • TACTICS & STRATEGY"
-    max_width = int(w * 0.86)
-    while font.size > 10 and draw.textbbox((0, 0), headline, font=font)[2] > max_width:
-        font = ImageFont.truetype(font_path, font.size - 2)
+        subline = "KEY IDEAS • PLANS • TACTICS"
+        cue = "!"
+    max_width = int(w * 0.79)
+    while font_is_scalable and font.size > 12 and draw.textbbox((0, 0), headline, font=font)[2] > max_width:
+        next_size = font.size - 2
+        try:
+            font = ImageFont.truetype(font_path, next_size)
+        except OSError:
+            font = ImageFont.load_default()
+            font_is_scalable = False
     bbox = draw.textbbox((0, 0), headline, font=font)
     headline_y = top + int(band_h * 0.15)
     draw.text(((w - (bbox[2] - bbox[0])) / 2, headline_y), headline, font=font,
@@ -1351,6 +1360,19 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
     subbbox = draw.textbbox((0, 0), subline, font=subfont)
     draw.text(((w - (subbbox[2] - subbbox[0])) / 2, top + int(band_h * 0.68)),
               subline, font=subfont, fill=(92, 240, 190, 255))
+    # A small, high-contrast cue encourages the viewer to inspect the critical square
+    # without obscuring the position or suggesting an unverified move.
+    cuefont = ImageFont.truetype(font_path, max(16, int(band_h * 0.45))) if font_is_scalable else ImageFont.load_default()
+    cue_x = int(w * 0.89)
+    cue_y = int(top + band_h * 0.50)
+    cue_bbox = draw.textbbox((0, 0), cue, font=cuefont)
+    cue_w = cue_bbox[2] - cue_bbox[0]
+    cue_h = cue_bbox[3] - cue_bbox[1]
+    draw.ellipse((cue_x - cue_w, cue_y - cue_h, cue_x + cue_w, cue_y + cue_h),
+                 fill=(232, 174, 58, 235), outline=(255, 255, 255, 240),
+                 width=max(2, int(w * 0.002)))
+    draw.text((cue_x - cue_w / 2, cue_y - cue_h / 2 - cue_bbox[1]),
+              cue, font=cuefont, fill=(7, 18, 30, 255))
     thumb_frame.save(thumbnail_path, format="JPEG", quality=94, optimize=True)
     thumb_frame.close()
     if not thumbnail_path.is_file() or thumbnail_path.stat().st_size < 5_000 or thumbnail_path.stat().st_size > 2_000_000:
