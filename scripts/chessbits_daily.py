@@ -1333,7 +1333,7 @@ def render_video(pgn: str, mode: str, title: str, voice_path: Path, out_path: Pa
         headline = title.upper()
         subline = "KEY IDEAS • PLANS • TACTICS"
         cue = "!"
-    max_width = int(w * 0.79)
+    max_width = int(w * 0.68)
     while font_is_scalable and font.size > 12 and draw.textbbox((0, 0), headline, font=font)[2] > max_width:
         next_size = font.size - 2
         try:
