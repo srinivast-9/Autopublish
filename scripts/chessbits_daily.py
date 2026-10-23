@@ -1094,6 +1094,9 @@ def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
 
 
 def validate_classic_puzzle_bank() -> None:
+    marker_probe = make_puzzle_script(None, "White", ["deflection"], ["Qh7#"], True)
+    if "\n__PUZZLE_REVEAL__\n" not in marker_probe:
+        raise RuntimeError("Puzzle narration must preserve the delayed solution-reveal marker.")
     seen_ids: set[str] = set()
     seen_signatures: set[str] = set()
     for template in CLASSIC_PUZZLE_GAMES:
@@ -1115,7 +1118,7 @@ def make_puzzle_script(rating: int | None, side: str, themes: list[str], sans: l
     if rating is not None and rating >= 2400:
         lead = f"{side} to move. This is a difficult one: mate in {mate_in}. Calculate forcing moves."
     # The solution is assembled from verified SAN moves by create_puzzle_voiceover.
-    return f"{lead}\\n__PUZZLE_REVEAL__\\nThe solution is {', '.join(sans)}."
+    return f"{lead}\n__PUZZLE_REVEAL__\nThe solution is {', '.join(sans)}."
 
 
 def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
