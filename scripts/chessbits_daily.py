@@ -1606,7 +1606,10 @@ def main() -> int:
         existing_tags = set(existing.get("tags", []))
         row["kind"] = "puzzle" if "ChessBitsPuzzle" in existing_tags else "opening"
         row["topic_id"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("ChessBitsTopic:")), "recovered-upload")
-        row["puzzle_id"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("LichessPuzzle:")), None)
+        row["puzzle_id"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("ChessBitsPuzzleId:")), None)
+        row["puzzle_signature"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("ChessBitsPuzzleSignature:")), None)
+        row["puzzle_position_signature"] = next((tag.split(":", 1)[1] for tag in existing_tags if tag.startswith("ChessBitsPuzzlePosition:")), None)
+        row["puzzle_source"] = "recovered_upload" if row["puzzle_id"] else None
         state.setdefault("published", []).append(row)
         state["published"] = state["published"][-400:]
         save_state(state)
@@ -1751,8 +1754,8 @@ def main() -> int:
         }
         options = theme_title_options.get(normalized_theme) or [
             "Can You Find Mate in {n}? | Chess Puzzle",
-            "One Winning Line: Mate in {n} Moves",
-            "Find the Hidden Mate in {n} Moves",
+            "One Winning Line: Mate in {n}",
+            "Find the Hidden Mate in {n}",
             "Only One Line Wins: Mate in {n}",
         ]
         title_seed = int(hashlib.sha256(str(puzzle_meta.get("id", target.isoformat())).encode("utf-8")).hexdigest()[:8], 16)
@@ -1790,6 +1793,10 @@ def main() -> int:
     qa = render_video(pgn, mode, title, voice_path, video_path, music_path, thumbnail_path, move_windows)
     if puzzle_meta:
         tags = tags + ["ChessBitsPuzzle", "ChessBitsPuzzleId:" + str(puzzle_meta["id"])]
+        if puzzle_meta.get("signature"):
+            tags.append("ChessBitsPuzzleSignature:" + str(puzzle_meta["signature"]))
+        if puzzle_meta.get("position_signature"):
+            tags.append("ChessBitsPuzzlePosition:" + str(puzzle_meta["position_signature"]))
     elif opening_entry and opening_entry.get("lesson_type") == "tactics":
         tags = tags + ["ChessBitsTactics", "ChessBitsTopic:" + str(topic_id)]
     else:
