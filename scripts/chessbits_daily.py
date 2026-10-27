@@ -1248,7 +1248,8 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
         else:
             puzzle = {}
             game_data = {}
-        puzzle_id = str(puzzle.get("id", ""))
+        try:
+            puzzle_id = str(puzzle.get("id", ""))
             if not puzzle_id or puzzle_id in used_ids:
                 failures.append(f"{puzzle_date}:missing-or-used")
                 continue
