@@ -290,6 +290,17 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-24",
+      "kind": "puzzle",
+      "topic_id": "recovered-upload",
+      "title": "One Winning Line: Mate in 1 Moves",
+      "video_id": "HtebOX6UKfE",
+      "url": "https://www.youtube.com/watch?v=HtebOX6UKfE",
+      "published_at": "2026-10-27T13:18:57.889456+05:30",
+      "recovered": true,
+      "puzzle_id": null
     }
   ]
 }
