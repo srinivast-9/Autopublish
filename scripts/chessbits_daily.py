@@ -1154,17 +1154,101 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
 
     failures = []
     for offset in range(0, 1):
-        # This endpoint is current-day only. A single validated candidate is
-        # better than 61 identical requests that silently return the same puzzle.
         puzzle_date = target
-        url = "https://lichess.org/api/puzzle/daily"
-        try:
-            response = requests.get(url, timeout=(15, 45), headers={"User-Agent": "ChessBitsAutoPublisher/1.0"})
-            response.raise_for_status()
-            data = response.json()
-            puzzle = data.get("puzzle", {})
-            game_data = data.get("game", {})
-            puzzle_id = str(puzzle.get("id", ""))
+        # The daily endpoint is not a historical archive and its one puzzle is
+        # often not a mate puzzle. Use Lichess's public, theme-filtered batch API
+        # to obtain a small random sample of actual mate-in-1/2/3 puzzles.
+        candidate_pool = []
+        for angle in ("mateIn1", "mateIn2", "mateIn3"):
+            try:
+                batch_url = f"https://lichess.org/api/puzzle/batch/{angle}?nb=15"
+                response = requests.get(
+                    batch_url, timeout=(15, 45),
+                    headers={"User-Agent": "ChessBitsAutoPublisher/1.0"},
+                )
+                response.raise_for_status()
+                batch = response.json()
+                for entry in batch.get("puzzles", []):
+                    candidate_puzzle = entry.get("puzzle", {})
+                    candidate_game = entry.get("game", {})
+                    candidate_id = str(candidate_puzzle.get("id", ""))
+                    candidate_rating = int(candidate_puzzle.get("rating") or 0)
+                    candidate_solutions = candidate_puzzle.get("solution") or []
+                    candidate_themes = [str(x) for x in candidate_puzzle.get("themes", [])]
+                    if not candidate_id or candidate_id in used_ids:
+                        failures.append(f"{angle}:missing-or-used")
+                        continue
+                    if candidate_rating < 1800:
+                        failures.append(f"{angle}:rating-{candidate_rating}")
+                        continue
+                    if len(candidate_solutions) not in (1, 3, 5):
+                        failures.append(f"{angle}:invalid-mate-line-length")
+                        continue
+                    if not any(x.lower() in {"matein1", "matein2", "matein3"} for x in candidate_themes):
+                        failures.append(f"{angle}:missing-mate-theme")
+                        continue
+                    source_game = chess.pgn.read_game(__import__("io").StringIO(candidate_game.get("pgn", "")))
+                    if source_game is None or source_game.errors:
+                        failures.append(f"{angle}:invalid-source-pgn")
+                        continue
+                    source_moves = list(source_game.mainline_moves())
+                    initial_ply = int(candidate_puzzle.get("initialPly", -1))
+                    if initial_ply < 0 or initial_ply >= len(source_moves):
+                        failures.append(f"{angle}:invalid-initial-ply")
+                        continue
+                    source_board = source_game.board()
+                    prefix_legal = True
+                    for source_move in source_moves[:initial_ply + 1]:
+                        if source_move not in source_board.legal_moves:
+                            prefix_legal = False
+                            break
+                        source_board.push(source_move)
+                    if not prefix_legal:
+                        failures.append(f"{angle}:illegal-source-prefix")
+                        continue
+                    start_fen = source_board.fen()
+                    uci_moves = []
+                    solution_legal = True
+                    for uci in candidate_solutions:
+                        try:
+                            move = chess.Move.from_uci(uci)
+                        except ValueError:
+                            solution_legal = False
+                            break
+                        if move not in source_board.legal_moves:
+                            solution_legal = False
+                            break
+                        uci_moves.append(move.uci())
+                        source_board.push(move)
+                    if not solution_legal or not source_board.is_checkmate():
+                        failures.append(f"{angle}:solution-not-legal-checkmate")
+                        continue
+                    signature = puzzle_signature(start_fen, uci_moves)
+                    position_signature = puzzle_position_signature(start_fen)
+                    if signature in used_signatures or position_signature in used_position_signatures:
+                        failures.append(f"{angle}:position-already-used")
+                        continue
+                    filtered_themes = [x for x in candidate_themes if x.lower() not in {"middlegame", "endgame", "short", "long"}][:5]
+                    primary = next((x for x in filtered_themes if x in {
+                        "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
+                        "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
+                        "hangingPiece", "trappedPiece", "backRankMate", "promotion",
+                    }), None)
+                    if primary and primary in recent_themes:
+                        failures.append(f"{angle}:recent-theme-{primary}")
+                        continue
+                    candidate_pool.append((candidate_rating, entry))
+            except requests.RequestException as exc:
+                failures.append(f"{angle}:{type(exc).__name__}")
+        if candidate_pool:
+            candidate_pool.sort(key=lambda item: item[0], reverse=True)
+            _, selected = candidate_pool[0]
+            puzzle = selected.get("puzzle", {})
+            game_data = selected.get("game", {})
+        else:
+            puzzle = {}
+            game_data = {}
+        puzzle_id = str(puzzle.get("id", ""))
             if not puzzle_id or puzzle_id in used_ids:
                 failures.append(f"{puzzle_date}:missing-or-used")
                 continue
