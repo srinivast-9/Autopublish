@@ -1143,6 +1143,9 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
 
     # Prefer difficult feed puzzles most of the time; use a curated classic
     # combination about every third Short for source variety, and as fallback.
+    # Lichess /api/puzzle/daily serves the current daily puzzle; it does not
+    # provide historical puzzles through a date query parameter. Do not pretend
+    # that iterating dates yields a historical pool.
     prefer_classic = bool(classic_candidates) and puzzle_count % 3 == 0
     if prefer_classic:
         template, candidate = random.choice(classic_candidates)
@@ -1150,9 +1153,11 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
         return candidate
 
     failures = []
-    for offset in range(0, 61):
-        puzzle_date = target - timedelta(days=offset)
-        url = "https://lichess.org/api/puzzle/daily?date=" + puzzle_date.strftime("%Y%m%d")
+    for offset in range(0, 1):
+        # This endpoint is current-day only. A single validated candidate is
+        # better than 61 identical requests that silently return the same puzzle.
+        puzzle_date = target
+        url = "https://lichess.org/api/puzzle/daily"
         try:
             response = requests.get(url, timeout=(15, 45), headers={"User-Agent": "ChessBitsAutoPublisher/1.0"})
             response.raise_for_status()
@@ -1164,7 +1169,9 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 failures.append(f"{puzzle_date}:missing-or-used")
                 continue
             rating = int(puzzle.get("rating") or 0)
-            if rating < 2000:
+            # Keep 2000+ as the preferred difficulty, but accept a valid 1800+
+            # current daily puzzle when the endpoint offers no historical pool.
+            if rating < 1800:
                 failures.append(f"{puzzle_date}:rating-{rating}")
                 continue
             game = chess.pgn.read_game(__import__("io").StringIO(game_data.get("pgn", "")))
@@ -1243,7 +1250,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 "source": "open_puzzle_feed",
                 "signature": signature,
                 "position_signature": position_signature,
-                "source_date": puzzle_date.isoformat(),
+                "source_date": None,
             }, sans, script
         except requests.RequestException as exc:
             failures.append(f"{puzzle_date}:{type(exc).__name__}")
