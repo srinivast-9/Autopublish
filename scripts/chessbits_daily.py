@@ -1231,7 +1231,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                     filtered_themes = [x for x in candidate_themes if x.lower() not in {"middlegame", "endgame", "short", "long"}][:5]
                     primary = next((x for x in filtered_themes if x in {
                         "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
-                        "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
+                        "discoveredAttack", "crushing", "doubleCheck",
                         "hangingPiece", "trappedPiece", "backRankMate", "promotion",
                     }), None)
                     if primary and primary in recent_themes:
@@ -1318,7 +1318,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
             themes = [str(theme) for theme in puzzle.get("themes", []) if str(theme).lower() not in {"middlegame", "endgame", "short", "long"}][:5]
             primary = next((theme for theme in themes if theme in {
                 "deflection", "sacrifice", "pin", "skewer", "fork", "interference",
-                "discoveredAttack", "mateIn2", "mateIn3", "crushing", "doubleCheck",
+                "discoveredAttack", "crushing", "doubleCheck",
                 "hangingPiece", "trappedPiece", "backRankMate", "promotion",
             }), None)
             if primary and primary in recent_themes:
