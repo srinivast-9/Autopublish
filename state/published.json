@@ -214,7 +214,7 @@
       "url": "https://www.youtube.com/watch?v=D11bI3jqtDA",
       "published_at": "2026-10-21T19:37:31.610731+05:30",
       "qa": {
-        "duration_seconds": 191.0,
+        "duration_seconds": 191,
         "bytes": 10518149,
         "width": 1920,
         "height": 1080,
@@ -294,13 +294,33 @@
     {
       "target_date": "2026-10-24",
       "kind": "puzzle",
-      "topic_id": "recovered-upload",
+      "topic_id": "puzzle-ZkITa",
       "title": "One Winning Line: Mate in 1 Moves",
       "video_id": "HtebOX6UKfE",
       "url": "https://www.youtube.com/watch?v=HtebOX6UKfE",
-      "published_at": "2026-10-27T13:18:57.889456+05:30",
-      "recovered": true,
-      "puzzle_id": null
+      "published_at": "2026-10-27T13:18:14.270640+05:30",
+      "qa": {
+        "duration_seconds": 27.02,
+        "bytes": 1832484,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "ZkITa",
+      "puzzle_rating": 1930,
+      "puzzle_signature": "1da500e80507c0c408053abcddd5e7d4a25ff85473d276ceecd5dbbca382fc03",
+      "puzzle_position_signature": "be11ae3cf84e6e7862d8958a1a6072ecb5bbb0ac9d05cdf0cf3ae3a6eb73c7af",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "morphysMate",
+        "oneMove",
+        "mateIn1"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
