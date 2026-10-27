@@ -128,15 +128,55 @@ jobs:
         if: always() && steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
         shell: bash
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/published.json
-          if git diff --cached --quiet; then
-            echo "No publishing ledger change to save."
-          else
+          # Keep the locally generated ledger, then merge it with the latest main
+          # before each push. This prevents a concurrent code commit from making
+          # a successful public upload's ledger write fail with non-fast-forward.
+          cp state/published.json /tmp/chessbits-candidate-state.json
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git show origin/main:state/published.json > /tmp/chessbits-remote-state.json
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          local_path = Path("/tmp/chessbits-candidate-state.json")
+          remote_path = Path("/tmp/chessbits-remote-state.json")
+          local = json.loads(local_path.read_text())
+          remote = json.loads(remote_path.read_text())
+          rows = {}
+          def quality(row):
+              return len(row) + 4 * len(row.get("qa", {})) + (20 if row.get("puzzle_signature") else 0)
+          for row in remote.get("published", []) + local.get("published", []):
+              video_id = row.get("video_id")
+              if not video_id:
+                  continue
+              old = rows.get(video_id)
+              if old is None or quality(row) > quality(old):
+                  rows[video_id] = row
+          merged = {"published": sorted(rows.values(), key=lambda row: (row.get("target_date", ""), row.get("published_at", "")))[-400:]}
+          local_path.write_text(json.dumps(merged, indent=2) + "\\n")
+          Path("state/published.json").write_text(json.dumps(merged, indent=2) + "\\n")
+          PY
+            # Move the commit base to the latest main while retaining the merged
+            # working-tree ledger. Only the ledger is staged into the new commit.
+            git reset --mixed origin/main
+            git add state/published.json
+            if git diff --cached --quiet; then
+              echo "Publish ledger already up to date."
+              exit 0
+            fi
             git commit -m "Record Chess Bits daily publishing result"
-            git push origin HEAD:main
-          fi
+            if git push origin HEAD:main; then
+              echo "Publish ledger saved."
+              exit 0
+            fi
+            echo "Ledger push attempt $attempt failed; will merge latest main and retry."
+            sleep $((attempt * 3))
+          done
+          echo "::error::Could not persist the publish ledger after three merge-and-push attempts."
+          exit 1
 
       - name: Send failure alert when SMTP is configured
         if: failure() && steps.gate.outputs.needed == 'true' && steps.gate.outputs.configured == 'true'
