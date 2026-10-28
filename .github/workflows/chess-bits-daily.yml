@@ -55,7 +55,11 @@ jobs:
           now = datetime.now(ZoneInfo("Asia/Kolkata"))
           today = now.date()
           path = Path("state/published.json")
-          state = json.loads(path.read_text()) if path.exists() else {"published": []}
+          raw_state = path.read_text(encoding="utf-8") if path.exists() else ""
+          # Recover from the older publisher bug that wrote literal backslash-n characters.
+          if raw_state.endswith("\\n"):
+              raw_state = raw_state[:-2]
+          state = json.loads(raw_state) if raw_state.strip() else {"published": []}
           rows = state.get("published", [])
           force_short = os.getenv("FORCE_SHORT_TODAY", "").lower() == "true"
           target = today if force_short or not rows else max(date.fromisoformat(x["target_date"]) for x in rows) + timedelta(days=1)
@@ -156,8 +160,8 @@ jobs:
               if old is None or quality(row) > quality(old):
                   rows[video_id] = row
           merged = {"published": sorted(rows.values(), key=lambda row: (row.get("target_date", ""), row.get("published_at", "")))[-400:]}
-          local_path.write_text(json.dumps(merged, indent=2) + "\\n")
-          Path("state/published.json").write_text(json.dumps(merged, indent=2) + "\\n")
+          local_path.write_text(json.dumps(merged, indent=2) + "\n")
+          Path("state/published.json").write_text(json.dumps(merged, indent=2) + "\n")
           PY
             # Move the commit base to the latest main while retaining the merged
             # working-tree ledger. Only the ledger is staged into the new commit.
