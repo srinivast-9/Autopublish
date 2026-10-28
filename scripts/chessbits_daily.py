@@ -1029,6 +1029,15 @@ def puzzle_signature(fen: str, moves_uci: list[str]) -> str:
     return hashlib.sha256((position + "|" + " ".join(moves_uci)).encode("utf-8")).hexdigest()
 
 
+def choose_puzzle_candidate(candidate_pool: list[tuple[int, dict]]) -> tuple[int, dict] | None:
+    """Prefer rated 1800+ puzzles, then 1700+, while allowing no candidate below 1600."""
+    preferred = [item for item in candidate_pool if item[0] >= 1800]
+    fallback = [item for item in candidate_pool if item[0] >= 1700]
+    last_resort = [item for item in candidate_pool if item[0] >= 1600]
+    eligible = preferred or fallback or last_resort
+    return max(eligible, key=lambda item: item[0]) if eligible else None
+
+
 def build_classic_puzzle(template: dict) -> tuple[str, dict, list[str], str]:
     game = chess.pgn.read_game(__import__("io").StringIO(template["pgn"]))
     if game is None or game.errors:
@@ -1097,6 +1106,20 @@ def validate_classic_puzzle_bank() -> None:
     marker_probe = make_puzzle_script(None, "White", ["deflection"], ["Qh7#"], True)
     if "\n__PUZZLE_REVEAL__\n" not in marker_probe:
         raise RuntimeError("Puzzle narration must preserve the delayed solution-reveal marker.")
+    rating_probe = [
+        (1740, {"puzzle": {"id": "fallback-1740"}}),
+        (1885, {"puzzle": {"id": "preferred-1885"}}),
+        (1715, {"puzzle": {"id": "fallback-1715"}}),
+    ]
+    selected_probe = choose_puzzle_candidate(rating_probe)
+    if not selected_probe or selected_probe[0] != 1885:
+        raise RuntimeError("Puzzle selector must prefer rating 1800+ when available.")
+    fallback_probe = choose_puzzle_candidate([(1740, {"puzzle": {"id": "fallback"}}), (1680, {})])
+    if not fallback_probe or fallback_probe[0] != 1740:
+        raise RuntimeError("Puzzle selector fallback must choose the best 1700+ candidate.")
+    floor_probe = choose_puzzle_candidate([(1660, {}), (1599, {})])
+    if not floor_probe or floor_probe[0] != 1660:
+        raise RuntimeError("Puzzle selector must enforce the 1600 minimum fallback.")
     seen_ids: set[str] = set()
     seen_signatures: set[str] = set()
     for template in CLASSIC_PUZZLE_GAMES:
@@ -1161,7 +1184,7 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
         candidate_pool = []
         for angle in ("mateIn1", "mateIn2", "mateIn3"):
             try:
-                batch_url = f"https://lichess.org/api/puzzle/batch/{angle}?nb=15"
+                batch_url = f"https://lichess.org/api/puzzle/batch/{angle}?nb=100"
                 response = requests.get(
                     batch_url, timeout=(15, 45),
                     headers={"User-Agent": "ChessBitsAutoPublisher/1.0"},
@@ -1178,7 +1201,8 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                     if not candidate_id or candidate_id in used_ids:
                         failures.append(f"{angle}:missing-or-used")
                         continue
-                    if candidate_rating < 1800:
+                    # Collect valid candidates down to 1600; the chooser still prefers 1800+.
+                    if candidate_rating < 1600:
                         failures.append(f"{angle}:rating-{candidate_rating}")
                         continue
                     if len(candidate_solutions) not in (1, 3, 5):
@@ -1240,12 +1264,19 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                     candidate_pool.append((candidate_rating, entry))
             except requests.RequestException as exc:
                 failures.append(f"{angle}:{type(exc).__name__}")
-        if candidate_pool:
-            candidate_pool.sort(key=lambda item: item[0], reverse=True)
-            _, selected = candidate_pool[0]
+        selected_candidate = choose_puzzle_candidate(candidate_pool)
+        if selected_candidate:
+            selected_rating, selected = selected_candidate
+            band = "1800+" if selected_rating >= 1800 else ("1700+" if selected_rating >= 1700 else "1600+ fallback")
+            print(
+                f"PUZZLE_SELECTED pool=lichess-batch rating={selected_rating} "
+                f"candidates={len(candidate_pool)} difficulty_band={band}",
+                flush=True,
+            )
             puzzle = selected.get("puzzle", {})
             game_data = selected.get("game", {})
         else:
+            print("PUZZLE_BATCH_EMPTY: no legal, unused, non-recent mate candidate at rating 1600+.", flush=True)
             puzzle = {}
             game_data = {}
         try:
@@ -1254,9 +1285,8 @@ def fetch_puzzle(target: date, used_ids: set[str], used_signatures: set[str],
                 failures.append(f"{puzzle_date}:missing-or-used")
                 continue
             rating = int(puzzle.get("rating") or 0)
-            # Keep 2000+ as the preferred difficulty, but accept a valid 1800+
-            # current daily puzzle when the endpoint offers no historical pool.
-            if rating < 1800:
+            # Keep 1800+ as the preferred difficulty; allow valid 1600+ only as fallback.
+            if rating < 1600:
                 failures.append(f"{puzzle_date}:rating-{rating}")
                 continue
             game = chess.pgn.read_game(__import__("io").StringIO(game_data.get("pgn", "")))
