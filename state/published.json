@@ -335,6 +335,36 @@
       "puzzle_signature": null,
       "puzzle_position_signature": null,
       "puzzle_source": null
+    },
+    {
+      "target_date": "2026-10-26",
+      "kind": "puzzle",
+      "topic_id": "puzzle-Zpsqd",
+      "title": "One Winning Line: Mate in 1",
+      "video_id": "J7Hs4Nzw4Tw",
+      "url": "https://www.youtube.com/watch?v=J7Hs4Nzw4Tw",
+      "published_at": "2026-10-28T16:41:05.455649+05:30",
+      "qa": {
+        "duration_seconds": 27.02,
+        "bytes": 1770092,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "Zpsqd",
+      "puzzle_rating": 1966,
+      "puzzle_signature": "ff004e4b906088bf8971b3a066b341bf039cf94a873483136ff21a284560d642",
+      "puzzle_position_signature": "37ec59ad9249a18e655ffebe51b10d14ae5c3e0f29cf64f27cdc0ef28ca1bc99",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "oneMove",
+        "mateIn1"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
