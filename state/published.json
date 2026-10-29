@@ -425,6 +425,33 @@
       "puzzle_primary_theme": "discoveredAttack",
       "music_track": "ncs-free",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-29",
+      "kind": "opening",
+      "topic_id": "immortal-game-sacrifice",
+      "title": "A Storm of Sacrifices: Initiative, Deflection, and Checkmate",
+      "video_id": "GeWynM8cIXI",
+      "url": "https://www.youtube.com/watch?v=GeWynM8cIXI",
+      "published_at": "2026-10-30T02:54:00.754110+05:30",
+      "qa": {
+        "duration_seconds": 324.67,
+        "bytes": 17467910,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": true,
+        "plies": 45,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
