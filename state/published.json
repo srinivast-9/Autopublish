@@ -452,6 +452,37 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-30",
+      "kind": "puzzle",
+      "topic_id": "puzzle-0nMQi",
+      "title": "One Winning Line: Mate in 2",
+      "video_id": "OIYsj0grHW8",
+      "url": "https://www.youtube.com/watch?v=OIYsj0grHW8",
+      "published_at": "2026-10-30T20:43:00.457447+05:30",
+      "qa": {
+        "duration_seconds": 37.9,
+        "bytes": 2606615,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 3,
+        "music_included": true
+      },
+      "puzzle_id": "0nMQi",
+      "puzzle_rating": 1613,
+      "puzzle_signature": "8be5f2ea970bfb4aeb200763d4acde65b8ffeb8a95692c6c5517e4bce38b089e",
+      "puzzle_position_signature": "fd9e5db5192cb1c775867b5221da9c29c774853277990cc6c654714d49df829e",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "mateIn2",
+        "intermezzo",
+        "opening"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
