@@ -483,6 +483,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-online",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-10-31",
+      "kind": "opening",
+      "topic_id": "latvian-gambit",
+      "title": "Latvian Gambit: A Sharp Counterattack After 1.e4 e5",
+      "video_id": "uA8kTp2l9AU",
+      "url": "https://www.youtube.com/watch?v=uA8kTp2l9AU",
+      "published_at": "2026-10-31T18:30:38.258339+05:30",
+      "qa": {
+        "duration_seconds": 148.37,
+        "bytes": 8350856,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 15,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
