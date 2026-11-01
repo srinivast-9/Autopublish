@@ -510,6 +510,37 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-01",
+      "kind": "puzzle",
+      "topic_id": "puzzle-e9IVy",
+      "title": "Find the Hidden Mate in 1",
+      "video_id": "IOaRe8FX-sk",
+      "url": "https://www.youtube.com/watch?v=IOaRe8FX-sk",
+      "published_at": "2026-11-01T20:54:36.909016+05:30",
+      "qa": {
+        "duration_seconds": 27.67,
+        "bytes": 1875757,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "e9IVy",
+      "puzzle_rating": 1997,
+      "puzzle_signature": "91694326e8bada8d35cd181ab473789459bf658f5e6f4aaa39115d87b5e69c4d",
+      "puzzle_position_signature": "ed774fe19a1eea988180ec8e5ad8eb776326498b1cdc2b7de48e8d3a0e885b4d",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "oneMove",
+        "mateIn1",
+        "master"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
