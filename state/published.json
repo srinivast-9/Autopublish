@@ -541,6 +541,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-02",
+      "kind": "opening",
+      "topic_id": "smith-morra",
+      "title": "Smith-Morra Gambit: Active Pieces Against the Sicilian",
+      "video_id": "lniB9GUFEfc",
+      "url": "https://www.youtube.com/watch?v=lniB9GUFEfc",
+      "published_at": "2026-11-02T22:55:55.529160+05:30",
+      "qa": {
+        "duration_seconds": 218.83,
+        "bytes": 11817976,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 27,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
