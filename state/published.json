@@ -599,6 +599,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-free",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-04",
+      "kind": "opening",
+      "topic_id": "benko-gambit",
+      "title": "Benko Gambit: Long-Term Pressure on the Queenside",
+      "video_id": "o2M2fs_jll4",
+      "url": "https://www.youtube.com/watch?v=o2M2fs_jll4",
+      "published_at": "2026-11-04T23:54:11.186372+05:30",
+      "qa": {
+        "duration_seconds": 176.45,
+        "bytes": 9543681,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 24,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
