@@ -657,6 +657,33 @@
       "puzzle_primary_theme": "pin",
       "music_track": "ncs-online",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-06",
+      "kind": "opening",
+      "topic_id": "blackmar-diemer",
+      "title": "Blackmar-Diemer Gambit: Open Lines and Fast Development",
+      "video_id": "MhfsgfduDwg",
+      "url": "https://www.youtube.com/watch?v=MhfsgfduDwg",
+      "published_at": "2026-11-07T00:25:33.448993+05:30",
+      "qa": {
+        "duration_seconds": 173.18,
+        "bytes": 9671216,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 19,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
