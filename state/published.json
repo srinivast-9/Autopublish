@@ -684,6 +684,39 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-07",
+      "kind": "puzzle",
+      "topic_id": "puzzle-TqmVI",
+      "title": "Material Down, Mate in 2 | Can You Find It?",
+      "video_id": "_iytggIqWh4",
+      "url": "https://www.youtube.com/watch?v=_iytggIqWh4",
+      "published_at": "2026-11-07T22:29:13.698933+05:30",
+      "qa": {
+        "duration_seconds": 35.3,
+        "bytes": 2292708,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 3,
+        "music_included": true
+      },
+      "puzzle_id": "TqmVI",
+      "puzzle_rating": 1642,
+      "puzzle_signature": "fd1e2fd8cb3ec179fbaae7dab335d6cac643e21313e2e432c3d8e94be5e80bba",
+      "puzzle_position_signature": "6e16bf8b6daa7a21523837499eca976460086db93355440c6bc5476f0ff08e99",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "mateIn2",
+        "masterVsMaster",
+        "attraction",
+        "sacrifice",
+        "pillsburysMate"
+      ],
+      "puzzle_primary_theme": "sacrifice",
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
