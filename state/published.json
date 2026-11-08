@@ -717,6 +717,33 @@
       "puzzle_primary_theme": "sacrifice",
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-08",
+      "kind": "opening",
+      "topic_id": "albin-countergambit",
+      "title": "Albin Countergambit: Challenge the Queen's Pawn Centre",
+      "video_id": "TmJLa5PHpAg",
+      "url": "https://www.youtube.com/watch?v=TmJLa5PHpAg",
+      "published_at": "2026-11-08T21:04:52.343198+05:30",
+      "qa": {
+        "duration_seconds": 160.7,
+        "bytes": 9081995,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 20,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
