@@ -744,6 +744,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-09",
+      "kind": "puzzle",
+      "topic_id": "puzzle-UEK5m",
+      "title": "One Fork, Forced Mate in 2?",
+      "video_id": "19vFO8Ux5Mo",
+      "url": "https://www.youtube.com/watch?v=19vFO8Ux5Mo",
+      "published_at": "2026-11-09T23:15:26.965061+05:30",
+      "qa": {
+        "duration_seconds": 40.8,
+        "bytes": 2459414,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 3,
+        "music_included": true
+      },
+      "puzzle_id": "UEK5m",
+      "puzzle_rating": 1652,
+      "puzzle_signature": "86348a1da25869164aeb8a10eb2ca7a5737dfd7b7819949f3459159ea75e2d8b",
+      "puzzle_position_signature": "4e1d9deeeb03e8afba8ce52971d06914f1463fc8ffe80ac6286327d0d206ba37",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "mateIn2",
+        "fork"
+      ],
+      "puzzle_primary_theme": "fork",
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
