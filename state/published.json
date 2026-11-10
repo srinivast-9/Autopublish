@@ -774,6 +774,33 @@
       "puzzle_primary_theme": "fork",
       "music_track": "ncs-free",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-10",
+      "kind": "opening",
+      "topic_id": "vienna-gambit",
+      "title": "Vienna Gambit: Build a Centre and Take Space",
+      "video_id": "XN7DIWv8v10",
+      "url": "https://www.youtube.com/watch?v=XN7DIWv8v10",
+      "published_at": "2026-11-10T23:39:16.585852+05:30",
+      "qa": {
+        "duration_seconds": 195.84,
+        "bytes": 10742390,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 19,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
