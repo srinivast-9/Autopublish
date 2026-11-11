@@ -801,6 +801,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-11",
+      "kind": "puzzle",
+      "topic_id": "puzzle-SfRK2",
+      "title": "Find the Hidden Mate in 1",
+      "video_id": "5pUzd_pLi6c",
+      "url": "https://www.youtube.com/watch?v=5pUzd_pLi6c",
+      "published_at": "2026-11-12T04:26:38.548365+05:30",
+      "qa": {
+        "duration_seconds": 27.62,
+        "bytes": 1822651,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "SfRK2",
+      "puzzle_rating": 1943,
+      "puzzle_signature": "ca306ccde21986af07d5efbf8fd9e78eddd1f0033f29d9122b29ab8bf0263ba1",
+      "puzzle_position_signature": "b38ec97b9e0234ed2a29dff3d114a361cd1936acc2f4e344ae3cebc5d3b92df3",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "mateIn1",
+        "oneMove"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
