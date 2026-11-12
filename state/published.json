@@ -831,6 +831,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-online",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-12",
+      "kind": "opening",
+      "topic_id": "elephant-gambit",
+      "title": "Elephant Gambit: Counterattack in the Centre",
+      "video_id": "qIELe8lEsm4",
+      "url": "https://www.youtube.com/watch?v=qIELe8lEsm4",
+      "published_at": "2026-11-12T18:39:06.117050+05:30",
+      "qa": {
+        "duration_seconds": 181.23,
+        "bytes": 9860764,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 19,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
