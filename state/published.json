@@ -858,6 +858,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-13",
+      "kind": "puzzle",
+      "topic_id": "puzzle-JcpBg",
+      "title": "One Winning Line: Mate in 1",
+      "video_id": "jZHc8xIA14g",
+      "url": "https://www.youtube.com/watch?v=jZHc8xIA14g",
+      "published_at": "2026-11-14T12:24:19.426962+05:30",
+      "qa": {
+        "duration_seconds": 28.9,
+        "bytes": 1999537,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "JcpBg",
+      "puzzle_rating": 1812,
+      "puzzle_signature": "49f2b17bace619e305b0227723a5f4623dbfc8c568abd1a21ca394301d162f57",
+      "puzzle_position_signature": "e34a9d388212eb4efb0f706f8a3c64b18ab3373112f01fd1eadad34bb0f3ce2c",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "mateIn1",
+        "oneMove"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
