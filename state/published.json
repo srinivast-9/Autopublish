@@ -888,6 +888,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-14",
+      "kind": "opening",
+      "topic_id": "scotch-gambit",
+      "title": "Scotch Gambit: Fast Development and Attacking Ideas",
+      "video_id": "Vq1eOMCGybo",
+      "url": "https://www.youtube.com/watch?v=Vq1eOMCGybo",
+      "published_at": "2026-11-14T20:02:38.467658+05:30",
+      "qa": {
+        "duration_seconds": 273.4,
+        "bytes": 14401909,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 36,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
