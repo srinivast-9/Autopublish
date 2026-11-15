@@ -915,6 +915,37 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-15",
+      "kind": "puzzle",
+      "topic_id": "puzzle-xKyMg",
+      "title": "Only One Line Wins: Mate in 1",
+      "video_id": "CXlv8-os5ik",
+      "url": "https://www.youtube.com/watch?v=CXlv8-os5ik",
+      "published_at": "2026-11-15T23:26:31.171629+05:30",
+      "qa": {
+        "duration_seconds": 28.7,
+        "bytes": 1862928,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "xKyMg",
+      "puzzle_rating": 1883,
+      "puzzle_signature": "6737be578602edb80cb364241afe5d6e4c0b29fe18fa9afad48ed4a167535a13",
+      "puzzle_position_signature": "cf0feb0bb6de215d5ff3e78abde543cc0ee04b261924c924b438558f79f97c5a",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "oneMove",
+        "mateIn1",
+        "master"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
