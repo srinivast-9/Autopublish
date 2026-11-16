@@ -21,7 +21,7 @@ The workflow polls every 30 minutes (at minutes 17 and 47). It publishes at most
 ## One-time channel setup
 
 1. Create the new YouTube channel and choose its name/artwork. The provisional in-video brand is **Bharat Hiring Brief**.
-2. Use a Google OAuth Desktop client that has YouTube Data API v3 enabled. You may reuse an existing OAuth client, but create a fresh refresh token while signed into the Google/Brand account that owns this channel.
+2. Use a Google OAuth Desktop client that has YouTube Data API v3 enabled. You may reuse an existing OAuth client, but create a fresh refresh token while signed into the Google/Brand account that owns **@india_jobs_1**. The bootstrap script checks the authenticated account's channels and prints the exact channel ID only when it finds that exact handle.
 3. On a trusted computer, install the requirements and run:
 
    ```bash
@@ -35,7 +35,7 @@ The workflow polls every 30 minutes (at minutes 17 and 47). It publishes at most
    - `JOBS_YOUTUBE_REFRESH_TOKEN`
    - `JOBS_YOUTUBE_CHANNEL_ID`
 
-   The channel ID is visible in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. Uploads are staged as private, their returned channel ID is checked against the configured channel, and only then are they made public. The workflow does not change existing videos.
+   The script automatically prints `JOBS_YOUTUBE_CHANNEL_ID` after an exact handle match. You can independently confirm it in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. Uploads are staged as private, their returned channel ID is checked against the configured channel, and only then are they made public. The workflow does not change existing videos.
 
 5. Once those four secrets are present, the scheduled publisher starts automatically. It checks the authorised channel ID before every upload and refuses to upload to a different channel.
 
