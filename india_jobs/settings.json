@@ -1,0 +1,31 @@
+{
+  "brand": "Bharat Hiring Brief",
+  "min_vacancies": 500,
+  "feed_url": "https://www.freejobalert.com/feed/",
+  "feed_limit": 100,
+  "max_official_links_to_check": 6,
+  "voice": "en-IN-PrabhatNeural",
+  "poll_interval_minutes": 30,
+  "max_jobs_per_run": 1,
+  "long_video_category_id": "27",
+  "privacy_status": "public",
+  "trusted_domains": [
+    "ibps.in", "sbi.co.in", "sbi.bank.in", "rbi.org.in", "nabard.org",
+    "sidbi.in", "bankofbaroda.in", "pnbindia.in", "canarabank.com",
+    "unionbankofindia.co.in", "indianbank.in", "iob.in",
+    "centralbankofindia.co.in", "bankofindia.co.in", "ucobank.com",
+    "indianrailways.gov.in", "rrbcdg.gov.in",
+    "ntpc.co.in", "iocl.com", "ongcindia.com", "gailonline.com",
+    "powergrid.in", "coalindia.in", "sail.co.in", "aai.aero",
+    "bharatpetroleum.in", "bhel.com", "hindustanpetroleum.com",
+    "nhpcindia.com", "nalcoindia.com", "nclcil.in", "grse.in",
+    "mazagondock.in", "goashipyard.in", "bel-india.in",
+    "hal-india.co.in", "cdac.in", "npcil.nic.in"
+  ],
+  "known_national_hosts": [
+    "upsc.gov.in", "ssc.gov.in", "ibps.in", "rbi.org.in",
+    "indianrailways.gov.in", "rrbcdg.gov.in", "drdo.gov.in",
+    "isro.gov.in", "joinindianarmy.nic.in", "joinindiannavy.gov.in",
+    "careerindianairforce.cdac.in", "nta.ac.in"
+  ]
+}
