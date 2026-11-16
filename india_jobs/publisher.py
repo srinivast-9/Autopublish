@@ -556,6 +556,13 @@ def run_one(service, state: dict, job: dict) -> None:
     short_file = folder / "short.mp4"
     short_thumb = folder / "short-thumb.jpg"
 
+    # GitHub-hosted runners are ephemeral. Recreate thumbnail files after a
+    # retry even when the corresponding YouTube video ID was saved previously.
+    if not long_thumb.exists():
+        make_thumbnail(long_thumb, job, False)
+    if not short_thumb.exists():
+        make_thumbnail(short_thumb, job, True)
+
     if not pending.get("long_id"):
         if not long_file.exists():
             long_file = render_scenes(long_scenes, folder / "render-long", False, job["category"])
