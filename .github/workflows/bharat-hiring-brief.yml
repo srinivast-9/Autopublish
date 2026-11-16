@@ -1,6 +1,11 @@
 name: Bharat Hiring Brief — India-wide jobs publisher
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "india_jobs/**"
+      - ".github/workflows/bharat-hiring-brief.yml"
   schedule:
     # Avoid top-of-hour load. Scheduled runs are best-effort on GitHub.
     - cron: "17,47 * * * *"
@@ -42,6 +47,7 @@ jobs:
         run: python india_jobs/publisher.py --self-test
 
       - name: Discover, verify, render and publish
+        if: github.event_name != 'push'
         env:
           JOBS_YOUTUBE_CLIENT_ID: ${{ secrets.JOBS_YOUTUBE_CLIENT_ID }}
           JOBS_YOUTUBE_CLIENT_SECRET: ${{ secrets.JOBS_YOUTUBE_CLIENT_SECRET }}
