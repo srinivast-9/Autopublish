@@ -442,7 +442,12 @@ def credentials():
     service = build("youtube", "v3", credentials=creds, cache_discovery=False)
     channels = service.channels().list(part="id", mine=True, maxResults=50).execute()
     ids = {x["id"] for x in channels.get("items", [])}
-    expected = os.environ["JOBS_YOUTUBE_CHANNEL_ID"]
+    expected = CONFIG["expected_youtube_channel_id"]
+    configured_secret = os.environ["JOBS_YOUTUBE_CHANNEL_ID"]
+    if configured_secret != expected:
+        raise RuntimeError(
+            "JOBS_YOUTUBE_CHANNEL_ID does not match the channel ID pinned in settings.json; refusing to upload."
+        )
     if expected not in ids:
         raise RuntimeError("OAuth is not authorised for the configured jobs channel; refusing to upload to another channel.")
     return service
@@ -687,6 +692,8 @@ def discover_next(state: dict) -> dict | None:
     return None
 
 def self_test() -> None:
+    assert CONFIG["youtube_channel_handle"] == "@india_jobs_1"
+    assert CONFIG["expected_youtube_channel_id"] == "UC-yrS6hTZQtlL8AyhkYxnEg"
     assert host_allowed("https://ssc.gov.in/") is True
     assert host_allowed("https://www.freejobalert.com/") is False
     assert host_allowed("http://ssc.gov.in/") is False
