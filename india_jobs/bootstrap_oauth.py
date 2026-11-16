@@ -17,6 +17,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/youtube.readonly",
 ]
 EXPECTED_HANDLE = "@india_jobs_1"
+EXPECTED_CHANNEL_ID = "UC-yrS6hTZQtlL8AyhkYxnEg"
 
 
 def main() -> None:
@@ -51,6 +52,11 @@ def main() -> None:
 
     channel = resolved[0]
     channel_id = channel["id"]
+    if channel_id != EXPECTED_CHANNEL_ID:
+        raise SystemExit(
+            f"The handle resolved to {channel_id}, but the configured destination is "
+            f"{EXPECTED_CHANNEL_ID}. No secrets were printed."
+        )
     snippet = channel.get("snippet", {})
     resolved_handle = (snippet.get("customUrl") or "").casefold()
     expected = args.handle.casefold()
