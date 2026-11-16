@@ -16,7 +16,7 @@ This is an independent pipeline in the existing Autopublish repository. It does 
 
 GitHub Actions (this repository is public), Python, Requests, BeautifulSoup, PyMuPDF, Pillow, FFmpeg, Edge-TTS, and the official YouTube Data API. No paid LLM, voice, thumbnail, video-rendering, scheduler, or hosting service is used.
 
-The workflow polls every 30 minutes (at minutes 17 and 47). GitHub scheduled runs are best-effort and can be delayed or dropped during service load; this is not an instant webhook. A failed attempt remains eligible for the next poll.
+The workflow polls every 30 minutes (at minutes 17 and 47). It publishes at most four verified job pairs per India calendar day (four long videos plus four Shorts); additional jobs remain in the discovery list for later runs. This cap stays comfortably below the default YouTube video-insert daily quota and preserves headroom for thumbnail/update calls. GitHub scheduled runs are best-effort and can be delayed or dropped during service load; this is not an instant webhook. A failed attempt remains eligible for the next poll.
 
 ## One-time channel setup
 
