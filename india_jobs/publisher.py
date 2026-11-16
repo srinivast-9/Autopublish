@@ -601,13 +601,21 @@ def run_one(service, state: dict, job: dict) -> None:
     state["done"][key] = {
       "long_id": pending["long_id"], "short_id": pending["short_id"],
       "organisation": job["organisation"], "vacancies": job["vacancies"],
-      "official_url": job["official_url"], "completed_at": datetime.utcnow().isoformat(timespec="seconds")+"Z"
+      "official_url": job["official_url"], "completed_at": datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(timespec="seconds")
     }
     state["pending"] = None
     save_state(state)
     log(f"Published a complete long-form + Short pair for {job['organisation']} ({job['vacancies']:,}).")
 
 def discover_next(state: dict) -> dict | None:
+    today_ist = datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+    published_today = sum(
+        1 for row in state["done"].values()
+        if isinstance(row, dict) and row.get("completed_at", "").startswith(today_ist)
+    )
+    if published_today >= int(CONFIG.get("max_pairs_per_day", 4)):
+        log(f"Daily safety cap reached ({published_today} completed job pairs); remaining jobs stay queued for tomorrow.")
+        return None
     entries = []
     seen = set()
     # Live public listing pages are used only to locate candidate detail URLs.
