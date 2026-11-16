@@ -116,5 +116,7 @@
     "https://www.freejobalert.com/new-updates/"
   ],
   "max_discovery_entries": 160,
-  "max_pairs_per_day": 4
+  "max_pairs_per_day": 4,
+  "youtube_channel_handle": "@india_jobs_1",
+  "expected_youtube_channel_id": "UC-yrS6hTZQtlL8AyhkYxnEg"
 }
