@@ -19,6 +19,7 @@ import textwrap
 import time
 from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from urllib.parse import urljoin, urlparse
 
 import edge_tts
@@ -276,7 +277,7 @@ def candidate_job(entry) -> tuple[dict | None, str]:
             if not is_india_wide(text, official_title, host):
                 continue
             deadline = parse_deadline(text)
-            if deadline and date.fromisoformat(deadline) < date.today():
+            if deadline and date.fromisoformat(deadline) < datetime.now(ZoneInfo('Asia/Kolkata')).date():
                 continue
             org = organisation_name(host)
             category = category_for(official_title + " " + text[:3000], host)
