@@ -115,5 +115,6 @@
     "https://www.freejobalert.com/LATEST-NOTIFICATIONS/",
     "https://www.freejobalert.com/new-updates/"
   ],
-  "max_discovery_entries": 160
+  "max_discovery_entries": 160,
+  "max_pairs_per_day": 4
 }
