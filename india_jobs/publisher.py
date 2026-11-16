@@ -447,12 +447,14 @@ def credentials():
         raise RuntimeError("OAuth is not authorised for the configured jobs channel; refusing to upload to another channel.")
     return service
 
-def upload_video(service, video: Path, title: str, description: str, tags: list[str]) -> str:
+def upload_video(service, video: Path, title: str, description: str, tags: list[str], on_uploaded=None) -> str:
+    # Stage privately so the actual destination channel can be checked before
+    # the video becomes public.
     body = {
       "snippet": {"title": title[:100], "description": description[:4900],
                   "tags": tags[:30], "categoryId": CONFIG["long_video_category_id"],
                   "defaultLanguage": "en"},
-      "status": {"privacyStatus": CONFIG["privacy_status"], "selfDeclaredMadeForKids": False}
+      "status": {"privacyStatus": "private", "selfDeclaredMadeForKids": False}
     }
     media = MediaFileUpload(str(video), mimetype="video/mp4", chunksize=8*1024*1024, resumable=True)
     request = service.videos().insert(part="snippet,status", body=body, media_body=media)
@@ -463,20 +465,58 @@ def upload_video(service, video: Path, title: str, description: str, tags: list[
             log(f"Upload progress: {int(status.progress()*100)}%")
     if not response or not response.get("id"):
         raise RuntimeError("YouTube did not return a video ID")
-    return response["id"]
+    video_id = response["id"]
+    expected_channel = os.environ["JOBS_YOUTUBE_CHANNEL_ID"]
+    actual_channel = response.get("snippet", {}).get("channelId")
+    if actual_channel != expected_channel:
+        raise RuntimeError(
+            f"Upload {video_id} landed on channel {actual_channel!r}, not the configured jobs channel; "
+            "the video was kept private and was not made public."
+        )
+    # Record the ID immediately after the private upload so a later API failure
+    # can be retried without creating another copy.
+    if on_uploaded:
+        on_uploaded(video_id)
+    return video_id
+
+def make_public_after_verification(service, video_id: str) -> None:
+    expected_channel = os.environ["JOBS_YOUTUBE_CHANNEL_ID"]
+    data = service.videos().list(part="snippet,status,processingDetails", id=video_id).execute()
+    rows = data.get("items", [])
+    if not rows:
+        raise RuntimeError(f"YouTube could not find uploaded video {video_id}")
+    item = rows[0]
+    actual_channel = item.get("snippet", {}).get("channelId")
+    if actual_channel != expected_channel:
+        raise RuntimeError(f"Video {video_id} belongs to channel {actual_channel!r}, not the configured jobs channel.")
+    status = item.get("status", {})
+    if status.get("privacyStatus") != "public":
+        processing = item.get("processingDetails", {}).get("processingStatus", "")
+        if processing in {"failed", "terminated"}:
+            raise RuntimeError(f"YouTube processing failed for video {video_id}: {processing}")
+        if processing != "succeeded":
+            return
+        service.videos().update(
+            part="status",
+            body={"id": video_id, "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+        ).execute()
 
 def wait_public(service, video_id: str) -> None:
     for _ in range(24):
-        data = service.videos().list(part="status,processingDetails", id=video_id).execute()
+        make_public_after_verification(service, video_id)
+        data = service.videos().list(part="snippet,status,processingDetails", id=video_id).execute()
         rows = data.get("items", [])
         if rows:
-            status = rows[0].get("status", {})
+            item = rows[0]
+            if item.get("snippet", {}).get("channelId") != os.environ["JOBS_YOUTUBE_CHANNEL_ID"]:
+                raise RuntimeError(f"Video {video_id} channel ID changed or did not match.")
+            status = item.get("status", {})
             if status.get("privacyStatus") == "public":
                 return
             if status.get("uploadStatus") == "rejected":
                 raise RuntimeError(f"YouTube rejected video {video_id}")
         time.sleep(15)
-    raise RuntimeError(f"Video {video_id} was not confirmed public; Short will not be published.")
+    raise RuntimeError(f"Video {video_id} was not confirmed public; it remains private until verified.")
 
 def set_thumbnail(service, video_id: str, image_path: Path) -> None:
     service.thumbnails().set(videoId=video_id, media_body=MediaFileUpload(str(image_path), mimetype="image/jpeg")).execute()
@@ -522,8 +562,12 @@ def run_one(service, state: dict, job: dict) -> None:
             long_file.replace(folder / "long.mp4")
         make_thumbnail(long_thumb, job, False)
         long_title, long_desc, _, _ = descriptions(job, "pending")
+        def remember_long(video_id: str) -> None:
+            pending["long_id"] = video_id
+            save_state(state)
         video_id = upload_video(service, folder / "long.mp4", long_title, long_desc,
-                                ["India jobs", "central government jobs", "PSU jobs", "bank jobs", "railway jobs"])
+                                ["India jobs", "central government jobs", "PSU jobs", "bank jobs", "railway jobs"],
+                                on_uploaded=remember_long)
         pending["long_id"] = video_id
         save_state(state)
         log(f"Long-form upload created: {video_id}")
@@ -539,8 +583,12 @@ def run_one(service, state: dict, job: dict) -> None:
             short_file.replace(folder / "short.mp4")
         make_thumbnail(short_thumb, job, True)
         _, _, short_title, short_desc = descriptions(job, pending["long_id"])
+        def remember_short(video_id: str) -> None:
+            pending["short_id"] = video_id
+            save_state(state)
         video_id = upload_video(service, folder / "short.mp4", short_title, short_desc,
-                                ["India jobs", "job alert", "India recruitment", "Shorts"])
+                                ["India jobs", "job alert", "India recruitment", "Shorts"],
+                                on_uploaded=remember_short)
         pending["short_id"] = video_id
         save_state(state)
         log(f"Short upload created: {video_id}")
