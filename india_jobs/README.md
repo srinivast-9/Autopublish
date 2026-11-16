@@ -4,7 +4,7 @@ This is an independent pipeline in the existing Autopublish repository. It does 
 
 ## Rules applied
 
-- FreeJobAlert's RSS feed is used only to discover candidate notices. The workflow does not publish FreeJobAlert article text, artwork, URLs, descriptions, layout, or branding.
+- FreeJobAlert's Latest Notifications and New Updates listing pages are used only to discover candidate notices; an RSS endpoint is not assumed. The workflow does not publish FreeJobAlert article text, artwork, URLs, descriptions, layout, or branding.
 - Each candidate must have a direct HTTPS link on an approved recruiting-organisation domain. Official government domains ending in `.gov.in` / `.nic.in` and a curated list of bank/PSU/railway domains are accepted.
 - The official source text/PDF must establish a nationwide scope (or be hosted by a recognised national recruiter without a state-only restriction).
 - The notice must disclose at least 500 vacancies. State-only, unverified, expired, image-only/unreadable or insufficiently structured notices are skipped.
@@ -16,7 +16,7 @@ This is an independent pipeline in the existing Autopublish repository. It does 
 
 GitHub Actions (this repository is public), Python, Requests, Feedparser, BeautifulSoup, PyMuPDF, Pillow, FFmpeg, Edge-TTS, and the official YouTube Data API. No paid LLM, voice, thumbnail, video-rendering, scheduler, or hosting service is used.
 
-The workflow polls every 30 minutes. GitHub scheduled runs are best-effort and can be delayed or dropped during service load; this is not an instant webhook. A failed attempt remains eligible for the next poll.
+The workflow polls every 30 minutes (at minutes 17 and 47). GitHub scheduled runs are best-effort and can be delayed or dropped during service load; this is not an instant webhook. A failed attempt remains eligible for the next poll.
 
 ## One-time channel setup
 
@@ -35,13 +35,13 @@ The workflow polls every 30 minutes. GitHub scheduled runs are best-effort and c
    - `JOBS_YOUTUBE_REFRESH_TOKEN`
    - `JOBS_YOUTUBE_CHANNEL_ID`
 
-   The channel ID is visible in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat.
+   The channel ID is visible in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. The workflow checks channel ownership before every upload.
 
 5. Once those four secrets are present, the scheduled publisher starts automatically. It checks the authorised channel ID before every upload and refuses to upload to a different channel.
 
 ## Content and monetization note
 
-Automation does not guarantee YouTube Partner Program acceptance. YouTube may reject channels that are repetitive, mass-produced, or merely read other websites. This pipeline adds independently written eligibility guidance, a candidate checklist, source verification and application-safety commentary, but the owner remains responsible for monitoring policy changes and channel performance.
+Automation does not guarantee YouTube Partner Program acceptance. YouTube explicitly warns that repetitive, template-like or mass-produced videos can be ineligible for monetization. This pipeline adds independently written eligibility guidance, a candidate checklist, source verification and application-safety commentary, but the owner remains responsible for checking the channel's actual originality and policy compliance.
 
 ## Safety
 
