@@ -1,0 +1,80 @@
+name: Bharat Hiring Brief — India-wide jobs publisher
+
+on:
+  schedule:
+    # Avoid top-of-hour load. Scheduled runs are best-effort on GitHub.
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bharat-hiring-brief-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: india_jobs/requirements.txt
+
+      - name: Install free rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          python -m pip install --upgrade pip
+          python -m pip install -r india_jobs/requirements.txt
+
+      - name: Run validation tests
+        run: python india_jobs/publisher.py --self-test
+
+      - name: Discover, verify, render and publish
+        env:
+          JOBS_YOUTUBE_CLIENT_ID: ${{ secrets.JOBS_YOUTUBE_CLIENT_ID }}
+          JOBS_YOUTUBE_CLIENT_SECRET: ${{ secrets.JOBS_YOUTUBE_CLIENT_SECRET }}
+          JOBS_YOUTUBE_REFRESH_TOKEN: ${{ secrets.JOBS_YOUTUBE_REFRESH_TOKEN }}
+          JOBS_YOUTUBE_CHANNEL_ID: ${{ secrets.JOBS_YOUTUBE_CHANNEL_ID }}
+        run: python india_jobs/publisher.py --run
+
+      - name: Persist deduplication and partial-upload state
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f state/india_jobs.json ]; then
+            echo "No job ledger changes to save."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git add state/india_jobs.json
+            if git diff --cached --quiet; then
+              echo "Job ledger is already up to date."
+              exit 0
+            fi
+            git commit -m "Save Bharat Hiring Brief publishing state" || true
+            if git push origin HEAD:main; then
+              echo "Job ledger committed."
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; rebasing on latest main."
+            git fetch origin main
+            git pull --rebase origin main
+            sleep $((attempt * 3))
+          done
+          echo "::error::Unable to persist the job ledger after three attempts."
+          exit 1
