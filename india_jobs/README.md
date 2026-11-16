@@ -5,7 +5,7 @@ This is an independent pipeline in the existing Autopublish repository. It does 
 ## Rules applied
 
 - FreeJobAlert's Latest Notifications and New Updates listing pages are used only to discover candidate notices; an RSS endpoint is not assumed. The workflow does not publish FreeJobAlert article text, artwork, URLs, descriptions, layout, or branding.
-- Each candidate must have a direct HTTPS link on an approved recruiting-organisation domain. Official government domains ending in `.gov.in` / `.nic.in` and a curated list of bank/PSU/railway domains are accepted.
+- Each candidate must have a direct HTTPS link on an approved recruiting-organisation domain. Only a maintained allowlist of national recruiting-organisation domains is accepted. A generic `.gov.in` or `.nic.in` host is not enough; unknown and state-government domains are rejected.
 - The official source text/PDF must establish a nationwide scope (or be hosted by a recognised national recruiter without a state-only restriction).
 - The notice must disclose at least 500 vacancies. State-only, unverified, expired, image-only/unreadable or insufficiently structured notices are skipped.
 - The videos are written from fields extracted from the official notice, with original candidate checklists and application-safety guidance. No source-site copy is used.
@@ -14,7 +14,7 @@ This is an independent pipeline in the existing Autopublish repository. It does 
 
 ## Free stack
 
-GitHub Actions (this repository is public), Python, Requests, Feedparser, BeautifulSoup, PyMuPDF, Pillow, FFmpeg, Edge-TTS, and the official YouTube Data API. No paid LLM, voice, thumbnail, video-rendering, scheduler, or hosting service is used.
+GitHub Actions (this repository is public), Python, Requests, BeautifulSoup, PyMuPDF, Pillow, FFmpeg, Edge-TTS, and the official YouTube Data API. No paid LLM, voice, thumbnail, video-rendering, scheduler, or hosting service is used.
 
 The workflow polls every 30 minutes (at minutes 17 and 47). GitHub scheduled runs are best-effort and can be delayed or dropped during service load; this is not an instant webhook. A failed attempt remains eligible for the next poll.
 
@@ -35,7 +35,7 @@ The workflow polls every 30 minutes (at minutes 17 and 47). GitHub scheduled run
    - `JOBS_YOUTUBE_REFRESH_TOKEN`
    - `JOBS_YOUTUBE_CHANNEL_ID`
 
-   The channel ID is visible in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. The workflow checks channel ownership before every upload.
+   The channel ID is visible in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. Uploads are staged as private, their returned channel ID is checked against the configured channel, and only then are they made public. The workflow does not change existing videos.
 
 5. Once those four secrets are present, the scheduled publisher starts automatically. It checks the authorised channel ID before every upload and refuses to upload to a different channel.
 
@@ -49,4 +49,4 @@ Automation does not guarantee YouTube Partner Program acceptance. YouTube explic
 - No state-specific job is intended to pass the nationwide filter.
 - No vacancy figure, deadline, qualification, age limit, pay or selection stage is invented. Missing fields are explicitly sent to the official notice.
 - No FreeJobAlert link appears in video titles, descriptions, narration or thumbnails.
-- No existing YouTube video is deleted, edited or made private.
+- No existing YouTube video is deleted, edited or made private; only newly created uploads are staged privately before being verified and published.
