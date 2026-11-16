@@ -22,7 +22,6 @@ from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import edge_tts
-import feedparser
 import fitz
 import requests
 from bs4 import BeautifulSoup
@@ -94,8 +93,6 @@ def host_allowed(url: str) -> bool:
             return False
         if host == "freejobalert.com" or host.endswith(".freejobalert.com"):
             return False
-        if host.endswith(".gov.in") or host.endswith(".nic.in"):
-            return not any(s.replace(" ", "") in host.replace("-", "") for s in STATE_NAMES)
         trusted = set(CONFIG["trusted_domains"]) | set(CONFIG["known_national_hosts"])
         return any(host == d or host.endswith("." + d) for d in trusted)
     except Exception:
@@ -122,11 +119,15 @@ def official_links_from_discovery(article_url: str) -> list[str]:
         raise ValueError("Discovery page redirected to an unexpected host")
     soup = BeautifulSoup(response.text, "html.parser")
     found = []
+    anchors = []
     for anchor in soup.find_all("a", href=True):
         url = urljoin(response.url, anchor["href"].strip())
         if host_allowed(url) and url not in found:
-            found.append(url)
-    return found[:CONFIG["max_official_links_to_check"]]
+            label = anchor.get_text(" ", strip=True).lower()
+            priority = 0 if re.search(r"official|notification|advertisement|apply online|pdf|recruitment", label) else 1
+            anchors.append((priority, url))
+    anchors.sort(key=lambda item: item[0])
+    return [url for _, url in anchors[:CONFIG["max_official_links_to_check"]]]
 
 def extract_official_content(url: str) -> tuple[str, str, str]:
     response = safe_get(url)
@@ -220,10 +221,8 @@ def is_india_wide(text: str, title: str, host: str) -> bool:
     national_hosts = set(CONFIG["known_national_hosts"])
     trusted = set(CONFIG["trusted_domains"])
     nationally_scoped = any(host == h or host.endswith("." + h) for h in national_hosts | trusted)
-    # A generic .gov.in/.nic.in hostname is accepted only when it is not a state host.
-    government_host = host.endswith(".gov.in") or host.endswith(".nic.in")
     state_in_title = any(re.search(r"\b" + re.escape(s) + r"\b", title.lower()) for s in STATE_NAMES)
-    return explicit or ((nationally_scoped or government_host) and not state_in_title)
+    return explicit or (nationally_scoped and not state_in_title)
 
 def organisation_name(host: str) -> str:
     known = {
@@ -376,7 +375,7 @@ def probe_duration(path: Path) -> float:
                                    "-of", "default=noprint_wrappers=1:nokey=1", str(path)], text=True)
     return max(1.5, float(out.strip()))
 
-def render_scenes(scenes: list[tuple[str, str]], directory: Path, vertical: bool) -> Path:
+def render_scenes(scenes: list[tuple[str, str]], directory: Path, vertical: bool, category: str) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     clips = []
     w, h = (1080, 1920) if vertical else (1920, 1080)
@@ -518,7 +517,7 @@ def run_one(service, state: dict, job: dict) -> None:
 
     if not pending.get("long_id"):
         if not long_file.exists():
-            long_file = render_scenes(long_scenes, folder / "render-long", False)
+            long_file = render_scenes(long_scenes, folder / "render-long", False, job["category"])
             long_file.replace(folder / "long.mp4")
         make_thumbnail(long_thumb, job, False)
         long_title, long_desc, _, _ = descriptions(job, "pending")
@@ -535,7 +534,7 @@ def run_one(service, state: dict, job: dict) -> None:
 
     if not pending.get("short_id"):
         if not short_file.exists():
-            short_file = render_scenes(short_scenes, folder / "render-short", True)
+            short_file = render_scenes(short_scenes, folder / "render-short", True, job["category"])
             short_file.replace(folder / "short.mp4")
         make_thumbnail(short_thumb, job, True)
         _, _, short_title, short_desc = descriptions(job, pending["long_id"])
@@ -560,13 +559,43 @@ def run_one(service, state: dict, job: dict) -> None:
     log(f"Published a complete long-form + Short pair for {job['organisation']} ({job['vacancies']:,}).")
 
 def discover_next(state: dict) -> dict | None:
-    feed_response = SESSION.get(CONFIG["feed_url"], timeout=TIMEOUT)
-    feed_response.raise_for_status()
-    feed = feedparser.parse(feed_response.content)
-    if feed.bozo and not feed.entries:
-        raise RuntimeError("Could not parse the recruitment discovery RSS feed")
-    for entry in feed.entries[:CONFIG["feed_limit"]]:
-        source_ref = entry.get("id") or entry.get("link") or entry.get("title", "")
+    entries = []
+    seen = set()
+    # Live public listing pages are used only to locate candidate detail URLs.
+    # Their titles and article text are never reused in the generated videos.
+    for listing_url in CONFIG["discovery_urls"]:
+        response = SESSION.get(listing_url, timeout=TIMEOUT)
+        response.raise_for_status()
+        page_host = (urlparse(response.url).hostname or "").lower()
+        if page_host != "freejobalert.com" and not page_host.endswith(".freejobalert.com"):
+            raise RuntimeError("FreeJobAlert listing redirected to an unexpected host")
+        soup = BeautifulSoup(response.text, "html.parser")
+        for row in soup.find_all("tr"):
+            for anchor in row.find_all("a", href=True):
+                label = anchor.get_text(" ", strip=True).lower()
+                target = urljoin(response.url, anchor["href"].strip())
+                host = (urlparse(target).hostname or "").lower()
+                if host != "freejobalert.com" and host != "www.freejobalert.com" and not host.endswith(".freejobalert.com"):
+                    continue
+                if not re.search(r"details|view|more|notification|apply|click", label):
+                    continue
+                if target not in seen:
+                    seen.add(target)
+                    entries.append({"link": target})
+        # Some page variants render cards rather than table rows.
+        for anchor in soup.find_all("a", href=True):
+            label = anchor.get_text(" ", strip=True).lower()
+            target = urljoin(response.url, anchor["href"].strip())
+            host = (urlparse(target).hostname or "").lower()
+            if host != "freejobalert.com" and host != "www.freejobalert.com" and not host.endswith(".freejobalert.com"):
+                continue
+            if not re.search(r"get details|view details|read more", label):
+                continue
+            if target not in seen:
+                seen.add(target)
+                entries.append({"link": target})
+    for entry in entries[:CONFIG["max_discovery_entries"]]:
+        source_ref = entry.get("link", "")
         if not source_ref:
             continue
         discovery_key = hashlib.sha256(source_ref.encode()).hexdigest()[:24]
@@ -575,11 +604,14 @@ def discover_next(state: dict) -> dict | None:
         try:
             job, reason = candidate_job(entry)
         except Exception as exc:
-            log(f"Temporary verification error for a feed item: {exc}")
+            # A network or parsing error is retried on the next poll.
+            log(f"Temporary verification error for a listing item: {exc}")
             continue
         if job is None:
-            state["done"][discovery_key] = {"status": "skipped", "reason": reason,
-                                           "checked_at": datetime.utcnow().isoformat(timespec="seconds")+"Z"}
+            state["done"][discovery_key] = {
+                "status": "skipped", "reason": reason,
+                "checked_at": datetime.utcnow().isoformat(timespec="seconds") + "Z"
+            }
             save_state(state)
             continue
         if job["key"] in state["done"]:
@@ -595,8 +627,9 @@ def self_test() -> None:
     assert host_allowed("https://www.freejobalert.com/") is False
     assert host_allowed("http://ssc.gov.in/") is False
     assert parse_vacancies("Total number of vacancies: 1,250", "") == 1250
-    assert is_india_wide("Candidates from all states may apply", "Recruitment notice", "example.gov.in")
-    assert not is_india_wide("State-wise vacancies only. Domicile is mandatory", "Notice", "example.gov.in")
+    assert is_india_wide("Candidates from all states may apply", "Recruitment notice", "upsc.gov.in")
+    assert not is_india_wide("State-wise vacancies only. Domicile is mandatory", "Notice", "upsc.gov.in")
+    assert not host_allowed("https://bihar.gov.in/recruitment/")
     assert category_for("SBI recruitment", "sbi.co.in") == "BANKS"
     assert category_for("Railway recruitment", "rrbcdg.gov.in") == "RAILWAY"
     log("Self-test passed.")
