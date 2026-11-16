@@ -1,6 +1,6 @@
 # Bharat Hiring Brief — free India-wide recruitment publisher
 
-This is an independent pipeline in the existing Autopublish repository. It does not modify the Chess Bits workflow or its state ledger.
+This is an independent pipeline in the existing Autopublish repository. It does not modify the Chess Bits workflow or its state ledger. Its only permitted publishing destination is **@india_jobs_1** (`UC-yrS6hTZQtlL8AyhkYxnEg`).
 
 ## Rules applied
 
@@ -35,7 +35,7 @@ The workflow polls every 30 minutes (at minutes 17 and 47). It publishes at most
    - `JOBS_YOUTUBE_REFRESH_TOKEN`
    - `JOBS_YOUTUBE_CHANNEL_ID`
 
-   The script automatically prints `JOBS_YOUTUBE_CHANNEL_ID` after an exact handle match. You can independently confirm it in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. Uploads are staged as private, their returned channel ID is checked against the configured channel, and only then are they made public. The workflow does not change existing videos.
+   The script resolves `@india_jobs_1` through YouTube's `forHandle` API, requires the returned ID to equal `UC-yrS6hTZQtlL8AyhkYxnEg`, and then confirms the same ID appears in the authenticated account's `mine=true` channel list before it prints `JOBS_YOUTUBE_CHANNEL_ID`. You can independently confirm it in YouTube Studio → Settings → Channel → Advanced settings. Never put secrets in source files or chat. Uploads are staged as private, their returned channel ID is checked against the configured channel, and only then are they made public. The workflow does not change existing videos.
 
 5. Once those four secrets are present, the scheduled publisher starts automatically. It checks the authorised channel ID before every upload and refuses to upload to a different channel.
 
