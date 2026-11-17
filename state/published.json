@@ -973,6 +973,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-17",
+      "kind": "puzzle",
+      "topic_id": "puzzle-fVj59",
+      "title": "Find the Hidden Mate in 1",
+      "video_id": "Om5Jm1jJOyI",
+      "url": "https://www.youtube.com/watch?v=Om5Jm1jJOyI",
+      "published_at": "2026-11-17T20:18:53.918821+05:30",
+      "qa": {
+        "duration_seconds": 27.62,
+        "bytes": 1847341,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "fVj59",
+      "puzzle_rating": 1993,
+      "puzzle_signature": "c101db97a60d042cb7c633c71f1dc2579a98cc7ebe76497503c9e1092237eb4f",
+      "puzzle_position_signature": "ecbbd5d1b5470c9a7e91ea7bf5691676a19aeeb0f6eced11c38caad81f6f672e",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "oneMove",
+        "mateIn1"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
