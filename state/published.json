@@ -1088,6 +1088,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-21",
+      "kind": "puzzle",
+      "topic_id": "puzzle-sM9pb",
+      "title": "Find the Hidden Mate in 2",
+      "video_id": "WI8RKz2M_Nw",
+      "url": "https://www.youtube.com/watch?v=WI8RKz2M_Nw",
+      "published_at": "2026-11-21T17:07:25.838817+05:30",
+      "qa": {
+        "duration_seconds": 37.07,
+        "bytes": 2106546,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 3,
+        "music_included": true
+      },
+      "puzzle_id": "sM9pb",
+      "puzzle_rating": 1634,
+      "puzzle_signature": "b870168cbbdb2d3912d18c02c6ed052b2bd1a3e4e883d1e16690fc200c34896a",
+      "puzzle_position_signature": "46a69a89f511dc1d31d4feb973b957f929ca5b5575ebc57b83db3b4fbe6779e1",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "master",
+        "mateIn2"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
