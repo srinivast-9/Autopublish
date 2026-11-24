@@ -1145,6 +1145,38 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-23",
+      "kind": "puzzle",
+      "topic_id": "puzzle-AusJH",
+      "title": "One Winning Line: Mate in 1",
+      "video_id": "R7PrijjQRns",
+      "url": "https://www.youtube.com/watch?v=R7PrijjQRns",
+      "published_at": "2026-11-24T07:59:35.458415+05:30",
+      "qa": {
+        "duration_seconds": 26.54,
+        "bytes": 1870940,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "AusJH",
+      "puzzle_rating": 1932,
+      "puzzle_signature": "1d4fae409b27a0ba4a45ca5b553ffabb7fe7441a895138ad48137232f609a801",
+      "puzzle_position_signature": "6af88334bf8e872f485852c5c2b3f70602d77bf0031c42825ef70bf50ac2b9b1",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "masterVsMaster",
+        "oneMove",
+        "mateIn1",
+        "master"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-online",
+      "start_position_thumbnail_set": true
     }
   ]
 }
