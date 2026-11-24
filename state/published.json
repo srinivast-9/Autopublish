@@ -1177,6 +1177,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-online",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-24",
+      "kind": "opening",
+      "topic_id": "budapest-gambit",
+      "title": "Budapest Gambit: Active Development Against 1.d4",
+      "video_id": "2-h2-TbFS6s",
+      "url": "https://www.youtube.com/watch?v=2-h2-TbFS6s",
+      "published_at": "2026-11-24T18:25:38.327047+05:30",
+      "qa": {
+        "duration_seconds": 186.84,
+        "bytes": 10344163,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 23,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
