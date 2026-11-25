@@ -1204,6 +1204,37 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-25",
+      "kind": "puzzle",
+      "topic_id": "puzzle-I9umD",
+      "title": "Can You Find Mate in 1? | Chess Puzzle",
+      "video_id": "gxi1opW2xyQ",
+      "url": "https://www.youtube.com/watch?v=gxi1opW2xyQ",
+      "published_at": "2026-11-25T23:01:10.176274+05:30",
+      "qa": {
+        "duration_seconds": 26.83,
+        "bytes": 1870491,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "I9umD",
+      "puzzle_rating": 1910,
+      "puzzle_signature": "22121b92c6d1aa68ca1616f8a909b0e1979c2757a1b3fa938e06f4c086af1a69",
+      "puzzle_position_signature": "c8cc8c1fa718f8ccc9eb3cb2b4dd2d7f127a582647a68a9dae70cda0a906fe7b",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "master",
+        "oneMove",
+        "mateIn1"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-done",
+      "start_position_thumbnail_set": true
     }
   ]
 }
