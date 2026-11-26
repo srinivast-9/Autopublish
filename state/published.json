@@ -1235,6 +1235,33 @@
       "puzzle_primary_theme": null,
       "music_track": "ncs-done",
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-26",
+      "kind": "opening",
+      "topic_id": "staunton-gambit",
+      "title": "Staunton Gambit: Active Play Against the Dutch Defence",
+      "video_id": "strJOQse_X4",
+      "url": "https://www.youtube.com/watch?v=strJOQse_X4",
+      "published_at": "2026-11-27T01:17:56.300297+05:30",
+      "qa": {
+        "duration_seconds": 165.6,
+        "bytes": 9143537,
+        "width": 1920,
+        "height": 1080,
+        "checkmate_confirmed": false,
+        "plies": 20,
+        "music_included": false
+      },
+      "puzzle_id": null,
+      "puzzle_rating": null,
+      "puzzle_signature": null,
+      "puzzle_position_signature": null,
+      "puzzle_source": null,
+      "puzzle_themes": [],
+      "puzzle_primary_theme": null,
+      "music_track": null,
+      "start_position_thumbnail_set": true
     }
   ]
 }
