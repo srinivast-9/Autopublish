@@ -1262,6 +1262,36 @@
       "puzzle_primary_theme": null,
       "music_track": null,
       "start_position_thumbnail_set": true
+    },
+    {
+      "target_date": "2026-11-27",
+      "kind": "puzzle",
+      "topic_id": "puzzle-CQK2V",
+      "title": "One Winning Line: Mate in 1",
+      "video_id": "PMb2XMHdN-s",
+      "url": "https://www.youtube.com/watch?v=PMb2XMHdN-s",
+      "published_at": "2026-11-27T18:27:46.554955+05:30",
+      "qa": {
+        "duration_seconds": 26.54,
+        "bytes": 1921423,
+        "width": 1080,
+        "height": 1920,
+        "checkmate_confirmed": true,
+        "plies": 1,
+        "music_included": true
+      },
+      "puzzle_id": "CQK2V",
+      "puzzle_rating": 2128,
+      "puzzle_signature": "de912ed211a8edd7168d80605fe6b82bdba1835a0b2d1b31fc3a7480b529ac7e",
+      "puzzle_position_signature": "20dcb01badca7bd602d99e0fd920a2a08f810422f7f8b51b752937a3b680a7aa",
+      "puzzle_source": "open_puzzle_feed",
+      "puzzle_themes": [
+        "oneMove",
+        "mateIn1"
+      ],
+      "puzzle_primary_theme": null,
+      "music_track": "ncs-free",
+      "start_position_thumbnail_set": true
     }
   ]
 }
